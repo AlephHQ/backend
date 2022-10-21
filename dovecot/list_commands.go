@@ -9,7 +9,7 @@ import (
 
 const dovecotDoveadmAPIKey = "AjshkdaEkjaad8sA6261aSdsj"
 
-func List() {
+func ListCommands() {
 	url := "http://modsoussi.com:7000/doveadm/v1"
 	apiAuthorization := fmt.Sprintf("X-Dovecot-API %s", getBase64EncodedDoveadmAPIKey())
 	req, err := http.NewRequest(http.MethodGet, url, nil)

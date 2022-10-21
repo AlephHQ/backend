@@ -5,5 +5,5 @@ import (
 )
 
 func main() {
-	dovecot.List()
+	dovecot.ListCommands()
 }

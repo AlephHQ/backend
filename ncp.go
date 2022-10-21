@@ -1,7 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"ncp/backend/dovecot"
+)
 
 func main() {
-	fmt.Println("Hello, World!")
+	dovecot.List()
 }

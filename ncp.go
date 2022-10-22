@@ -1,9 +1,9 @@
 package main
 
 import (
-	"ncp/backend/dovecot"
+	"ncp/backend/imap"
 )
 
 func main() {
-	dovecot.FetchMail()
+	imap.Run()
 }

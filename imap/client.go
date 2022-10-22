@@ -5,21 +5,42 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"sync"
 )
 
+type Client struct {
+	C net.Conn
+	L sync.Mutex
+}
+
+func (c *Client) ReadLine() (string, error) {
+	return bufio.NewReader(c.C).ReadString('\n')
+}
+
 func Run() {
-	conn, err := net.Dial("tcp", "modsoussi.com:143")
+	c, err := net.Dial("tcp", "modsoussi.com:143")
 	if err != nil {
 		log.Panic(err)
 	}
-	defer conn.Close()
+	defer c.Close()
 
-	fmt.Fprintf(conn, "abcd CAPABILITY")
+	client := Client{C: c}
 
-	resp, err := bufio.NewReader(conn).ReadString('\n')
+	resp, err := client.ReadLine()
 	if err != nil {
 		log.Println(err)
 	}
 
 	log.Println(resp)
+
+	client.L.Lock()
+	fmt.Fprintf(client.C, "abcd LOGOUT")
+
+	resp, err = client.ReadLine()
+	if err != nil {
+		log.Println(err)
+	}
+
+	log.Println(resp)
+	client.L.Unlock()
 }

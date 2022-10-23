@@ -13,7 +13,8 @@ import (
 var ErrStatusNotOK = errors.New("status not ok")
 
 type Client struct {
-	conn net.Conn
+	conn   net.Conn
+	reader *bufio.Reader
 
 	State imap.ConnectionState
 	lock  sync.Mutex
@@ -25,8 +26,10 @@ func New() (*Client, error) {
 		return nil, err
 	}
 
+	reader := bufio.NewReader(conn)
+
 	// did we get a greeting?
-	r, err := bufio.NewReader(conn).ReadString('\n')
+	r, err := reader.ReadString('\n')
 	if err != nil {
 		return nil, err
 	}
@@ -37,11 +40,20 @@ func New() (*Client, error) {
 	}
 	log.Println(resp)
 
-	return &Client{conn: conn, State: imap.ConnectedState}, nil
+	return &Client{conn: conn, State: imap.ConnectedState, reader: reader}, nil
 }
 
 func (c *Client) Logout() {
-	fmt.Fprintf(c.conn, "A99 Logout")
+	_, err := fmt.Fprintf(c.conn, "a logout")
+	if err != nil {
+		log.Panic(err)
+	}
+
+	r, err := c.reader.ReadString('\n')
+	if err != nil {
+		log.Panic(err)
+	}
+	log.Println(r)
 
 	c.conn.Close()
 }

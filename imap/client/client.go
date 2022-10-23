@@ -17,7 +17,22 @@ type Client struct {
 	reader *bufio.Reader
 
 	State imap.ConnectionState
+	wg    sync.WaitGroup
 	lock  sync.Mutex
+}
+
+func (c *Client) read() {
+	for {
+		r, err := c.reader.ReadString('\n')
+		if err != nil {
+			log.Panic(err)
+		}
+
+		resp := imap.NewResponse(r).Parse()
+		if resp.StatusResp == imap.StatusResponseBYE {
+			return
+		}
+	}
 }
 
 func New() (*Client, error) {
@@ -38,22 +53,15 @@ func New() (*Client, error) {
 	if resp.StatusResp != imap.StatusResponseOK {
 		return nil, ErrStatusNotOK
 	}
-	log.Println(resp)
 
-	return &Client{conn: conn, State: imap.ConnectedState, reader: reader}, nil
+	client := &Client{conn: conn, State: imap.ConnectedState, reader: reader}
+	go client.read()
+
+	return client, nil
 }
 
 func (c *Client) Logout() {
-	_, err := fmt.Fprintf(c.conn, "a logout")
-	if err != nil {
-		log.Panic(err)
-	}
-
-	r, err := c.reader.ReadString('\n')
-	if err != nil {
-		log.Panic(err)
-	}
-	log.Println(r)
+	fmt.Fprintf(c.conn, "a logout")
 
 	c.conn.Close()
 }

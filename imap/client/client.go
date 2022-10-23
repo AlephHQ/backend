@@ -83,6 +83,11 @@ func (c *Client) Capability() {
 	fmt.Fprintf(c.conn, "a01 capability")
 }
 
+func (c *Client) Login() {
+	c.Add(1)
+	fmt.Fprintf(c.conn, "a01 login mo@modsoussi.com alohomora")
+}
+
 func (c *Client) Logout() {
 	fmt.Fprintf(c.conn, "a logout")
 

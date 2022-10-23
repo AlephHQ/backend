@@ -12,5 +12,5 @@ func main() {
 	}
 	defer client.Logout()
 
-	client.Capability()
+	client.Login()
 }

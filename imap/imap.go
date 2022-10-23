@@ -9,10 +9,11 @@ import (
 type ConnectionState int
 
 const (
-	NotAuthenticatedState ConnectionState = 0
-	AuthenticatedState    ConnectionState = 1
-	SelectedState         ConnectionState = 2
-	LogoutState           ConnectionState = 3
+	ConnectingState       ConnectionState = 0
+	NotAuthenticatedState ConnectionState = 1
+	AuthenticatedState    ConnectionState = 2
+	SelectedState         ConnectionState = 3
+	LogoutState           ConnectionState = 4
 )
 
 func Run() {

@@ -19,4 +19,5 @@ func New() (*Client, error) {
 		return nil, err
 	}
 
+	return c, nil
 }

@@ -1,9 +1,14 @@
 package main
 
 import (
-	"ncp/backend/imap"
+	"log"
+	"ncp/backend/imap/client"
 )
 
 func main() {
-	imap.Run()
+	client, err := client.New()
+	if err != nil {
+		log.Panic(err)
+	}
+	client.Logout()
 }

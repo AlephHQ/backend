@@ -10,6 +10,7 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
+	defer client.Logout()
 
-	client.Logout()
+	client.Capability()
 }

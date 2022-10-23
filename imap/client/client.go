@@ -18,12 +18,25 @@ type Client struct {
 
 	State imap.ConnectionState
 	wg    sync.WaitGroup
-	lock  sync.Mutex
+	// lock  sync.Mutex
+}
+
+func (c *Client) Wait() {
+	c.wg.Wait()
+}
+
+func (c *Client) Add(delta int) {
+	c.wg.Add(delta)
+}
+
+func (c *Client) Done() {
+	c.wg.Done()
 }
 
 func (c *Client) read() {
 	for {
 		r, err := c.reader.ReadString('\n')
+		log.Println(r)
 		if err != nil {
 			log.Panic(err)
 		}
@@ -31,6 +44,10 @@ func (c *Client) read() {
 		resp := imap.NewResponse(r).Parse()
 		if resp.StatusResp == imap.StatusResponseBYE {
 			return
+		}
+
+		if resp.Tag == "a01" {
+			c.Done()
 		}
 	}
 }
@@ -53,6 +70,7 @@ func New() (*Client, error) {
 	if resp.StatusResp != imap.StatusResponseOK {
 		return nil, ErrStatusNotOK
 	}
+	reader.Reset(conn)
 
 	client := &Client{conn: conn, State: imap.ConnectedState, reader: reader}
 	go client.read()
@@ -60,8 +78,14 @@ func New() (*Client, error) {
 	return client, nil
 }
 
+func (c *Client) Capability() {
+	c.Add(1)
+	fmt.Fprintf(c.conn, "a01 capability")
+}
+
 func (c *Client) Logout() {
 	fmt.Fprintf(c.conn, "a logout")
 
+	c.Wait()
 	c.conn.Close()
 }

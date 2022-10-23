@@ -1,0 +1,7 @@
+# go directories
+pkg/**
+bin/**
+
+# VSCode
+.vscode/**
+

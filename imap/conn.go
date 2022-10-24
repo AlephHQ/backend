@@ -11,7 +11,7 @@ type Conn struct {
 	net.Conn
 
 	*bufio.Reader
-	*bufio.Writer
+	*Writer
 
 	isTLS bool
 }
@@ -44,7 +44,7 @@ func Dial(network, addr string) (*Conn, error) {
 	conn := &Conn{}
 	conn.Conn = c
 	conn.Reader = bufio.NewReader(c)
-	conn.Writer = bufio.NewWriter(c)
+	conn.Writer = NewWriter(c)
 
 	return conn, nil
 }
@@ -58,7 +58,7 @@ func DialWithTLS(network, addr string) (*Conn, error) {
 	conn := &Conn{}
 	conn.Conn = c
 	conn.Reader = bufio.NewReader(c)
-	conn.Writer = bufio.NewWriter(c)
+	conn.Writer = NewWriter(c)
 	conn.isTLS = true
 
 	return conn, nil

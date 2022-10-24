@@ -70,7 +70,6 @@ func New() (*Client, error) {
 	if resp.StatusResp != imap.StatusResponseOK {
 		return nil, ErrStatusNotOK
 	}
-	reader.Reset(conn)
 
 	client := &Client{conn: conn, State: imap.ConnectedState, reader: reader}
 	go client.read()

@@ -2,15 +2,21 @@ package main
 
 import (
 	"log"
-	"ncp/backend/imap/client"
+	"ncp/backend/imap"
 )
 
 func main() {
-	client, err := client.New()
+	conn, err := imap.DialWithTLS("tcp", "modsoussi.com:993")
 	if err != nil {
 		log.Panic(err)
 	}
-	defer client.Logout()
 
-	client.Login()
+	conn.Read()
+
+	_, err = conn.Writer.WriteString("a01 noop")
+	if err != nil {
+		log.Panic(err)
+	}
+	conn.Writer.Flush()
+	conn.Read()
 }

@@ -34,7 +34,7 @@ func (c *Conn) Read() {
 	log.Println(resp)
 }
 
-func Dial(network, addr string) (*Conn, error) {
+func Dial(network, addr string) (*Client, error) {
 	c, err := net.Dial(network, addr)
 	if err != nil {
 		return nil, err
@@ -45,10 +45,10 @@ func Dial(network, addr string) (*Conn, error) {
 	conn.Reader = bufio.NewReader(c)
 	conn.Writer = NewWriter(c)
 
-	return conn, nil
+	return New(conn), nil
 }
 
-func DialWithTLS(network, addr string) (*Conn, error) {
+func DialWithTLS(network, addr string) (*Client, error) {
 	c, err := tls.Dial(network, addr, nil)
 	if err != nil {
 		return nil, err
@@ -60,5 +60,5 @@ func DialWithTLS(network, addr string) (*Conn, error) {
 	conn.Writer = NewWriter(c)
 	conn.isTLS = true
 
-	return conn, nil
+	return New(conn), nil
 }

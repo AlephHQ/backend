@@ -6,25 +6,16 @@ import (
 )
 
 func main() {
-	conn, err := imap.DialWithTLS("tcp", "modsoussi.com:993")
+	client, err := imap.DialWithTLS("tcp", "modsoussi.com:993")
 	if err != nil {
 		log.Panic(err)
 	}
-	defer conn.Close()
+	defer client.Logout()
+	client.Read()
 
-	conn.Read()
-
-	_, err = conn.Writer.WriteString("login mo@modsoussi.com alohomora")
+	err = client.Login("mo@modsoussi.com", "alohomora")
 	if err != nil {
 		log.Panic(err)
 	}
-	conn.Writer.Flush()
-	conn.Read()
-
-	_, err = conn.Writer.WriteString("logout")
-	if err != nil {
-		log.Panic(err)
-	}
-	conn.Writer.Flush()
-	conn.Read()
+	client.Read()
 }

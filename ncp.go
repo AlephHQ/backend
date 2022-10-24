@@ -13,7 +13,14 @@ func main() {
 
 	conn.Read()
 
-	_, err = conn.Writer.WriteString("a01 noop")
+	_, err = conn.Writer.WriteString("a01 login mo@modsoussi.com alohomora\r\n")
+	if err != nil {
+		log.Panic(err)
+	}
+	conn.Writer.Flush()
+	conn.Read()
+
+	_, err = conn.Writer.WriteString("a02 logout\r\n")
 	if err != nil {
 		log.Panic(err)
 	}

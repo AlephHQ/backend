@@ -25,6 +25,7 @@ func (c *Conn) Read() {
 		}
 
 		if r == '\n' {
+			c.UnreadRune()
 			break
 		}
 

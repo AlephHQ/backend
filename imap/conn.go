@@ -7,6 +7,11 @@ import (
 	"net"
 )
 
+const (
+	cr = '\r'
+	lf = '\n'
+)
+
 type Conn struct {
 	net.Conn
 
@@ -24,9 +29,15 @@ func (c *Conn) Read() {
 			log.Panic(err)
 		}
 
-		if r == '\n' {
-			c.UnreadRune()
-			break
+		if r == cr {
+			r, _, err = c.ReadRune()
+			if err != nil {
+				log.Panic(err)
+			}
+
+			if r == lf {
+				break
+			}
 		}
 
 		resp = resp + string(r)

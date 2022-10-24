@@ -32,5 +32,7 @@ func NewWriter(w io.Writer) *Writer {
 }
 
 func (w *Writer) WriteString(s string) (int, error) {
-	return w.Writer.WriteString(getTag() + " " + s + crlf)
+	cmd := getTag() + " " + s
+	log.Println(cmd)
+	return w.Writer.WriteString(cmd + crlf)
 }

@@ -11,11 +11,9 @@ func main() {
 		log.Panic(err)
 	}
 	defer client.Logout()
-	client.Read()
 
 	err = client.Login("mo@modsoussi.com", "alohomora")
 	if err != nil {
 		log.Panic(err)
 	}
-	client.Read()
 }

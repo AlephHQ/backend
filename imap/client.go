@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"sync"
 )
 
 var ErrStatusNotOK = errors.New("status not ok")
@@ -11,18 +12,32 @@ var ErrStatusNotOK = errors.New("status not ok")
 type Client struct {
 	conn *Conn
 
+	lock     sync.Mutex
 	handlers map[string]HandlerFunc
 }
 
 func New(conn *Conn) *Client {
 	handlers := make(map[string]HandlerFunc)
+	client := &Client{conn: conn, handlers: handlers}
 
-	return &Client{conn, handlers}
+	go client.Read()
+
+	return client
 }
 
 func (c *Client) execute(cmd string) error {
 	tag := getTag()
+	c.registerHandler(tag, func(resp *Response) {
+		log.Println(resp)
+	})
+
 	return c.conn.Writer.WriteString(tag + " " + cmd)
+}
+
+func (c *Client) registerHandler(tag string, f HandlerFunc) {
+	c.lock.Lock()
+	c.handlers[tag] = f
+	c.lock.Unlock()
 }
 
 func (c *Client) Login(username, password string) error {
@@ -40,19 +55,26 @@ func (c *Client) Logout() error {
 }
 
 func (c *Client) Read() {
-	resp := ""
 	for {
-		r, _, err := c.conn.ReadRune()
-		if err != nil {
-			log.Panic(err)
+		respRaw := ""
+		for {
+			r, _, err := c.conn.ReadRune()
+			if err != nil {
+				log.Panic(err)
+			}
+
+			if r == '\n' {
+				break
+			}
+
+			respRaw = respRaw + string(r)
 		}
 
-		if r == '\n' {
-			break
+		if respRaw != "" {
+			resp := Parse(respRaw)
+			if handler := c.handlers[resp.Tag]; handler != nil {
+				handler(resp)
+			}
 		}
-
-		resp = resp + string(r)
 	}
-
-	log.Println(resp)
 }

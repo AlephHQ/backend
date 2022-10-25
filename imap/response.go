@@ -59,5 +59,12 @@ func Parse(raw string) *Response {
 	}
 	resp.Tag = atom
 
+	// Attempt to read status response
+	atom, err = readAtom(reader)
+	if err != nil {
+		log.Panic(err)
+	}
+	resp.StatusResp = StatusResponse(atom)
+
 	return resp
 }

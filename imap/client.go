@@ -28,7 +28,11 @@ func New(conn *Conn) *Client {
 func (c *Client) execute(cmd string) error {
 	tag := getTag()
 	c.registerHandler(tag, func(resp *Response) {
-		log.Println(resp)
+		log.Println(resp.Raw)
+
+		if resp.StatusResp == StatusResponseBYE {
+			c.conn.Close()
+		}
 	})
 
 	return c.conn.Writer.WriteString(tag + " " + cmd)
@@ -50,7 +54,6 @@ func (c *Client) Logout() error {
 		return err
 	}
 
-	c.conn.Close()
 	return nil
 }
 

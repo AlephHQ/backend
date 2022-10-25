@@ -7,10 +7,14 @@ import (
 )
 
 const (
-	space = ' '
-	star  = '*'
-	cr    = '\r'
-	lf    = '\n'
+	space         = ' '
+	star          = '*'
+	cr            = '\r'
+	lf            = '\n'
+	doubleQuote   = '"'
+	respCodeStart = '['
+	respCodeEnd   = ']'
+	plus          = '+'
 )
 
 type Response struct {
@@ -67,6 +71,13 @@ func Parse(raw string) *Response {
 		log.Panic(err)
 	}
 	resp.StatusResp = StatusResponse(atom)
+
+	// Attempt to read status response code
+	atom, err = readAtom(reader)
+	if err != nil {
+		log.Panic(err)
+	}
+	resp.StatusRespCode = StatusResponseCode(atom)
 
 	return resp
 }

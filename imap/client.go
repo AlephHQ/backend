@@ -30,15 +30,17 @@ func New(conn *Conn) *Client {
 func (c *Client) execute(cmd string) error {
 	tag := getTag()
 	c.registerHandler(tag, func(resp *Response) {
-		log.Println(resp.Raw)
+		log.Println(resp.Tag, resp.StatusResp, resp.StatusRespCode)
 
-		if resp.StatusResp == StatusResponseBYE {
-			log.Println("Closing connection ...")
-			c.wg.Done()
-			c.conn.Close()
-		} else {
-			c.wg.Done()
-		}
+		// if resp.StatusResp == StatusResponseBYE {
+		// 	log.Println("Closing connection ...")
+		// 	c.wg.Done()
+		// 	c.conn.Close()
+		// } else {
+		// 	c.wg.Done()
+		// }
+
+		c.wg.Done()
 	})
 
 	c.wg.Add(1)
@@ -49,6 +51,10 @@ func (c *Client) registerHandler(tag string, f HandlerFunc) {
 	c.lock.Lock()
 	c.handlers[tag] = f
 	c.lock.Unlock()
+}
+
+func (c *Client) handleUnsolicitedResp(resp *Response) {
+	log.Println(resp.Tag, resp.StatusResp, resp.StatusRespCode)
 }
 
 func (c *Client) Login(username, password string) error {
@@ -85,6 +91,8 @@ func (c *Client) Read() {
 			resp := Parse(respRaw)
 			if handler := c.handlers[resp.Tag]; handler != nil {
 				handler(resp)
+			} else {
+				c.handleUnsolicitedResp(resp)
 			}
 		}
 	}

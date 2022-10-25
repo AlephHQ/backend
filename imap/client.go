@@ -10,14 +10,19 @@ var ErrStatusNotOK = errors.New("status not ok")
 
 type Client struct {
 	conn *Conn
+
+	handlers map[string]HandlerFunc
 }
 
 func New(conn *Conn) *Client {
-	return &Client{conn}
+	handlers := make(map[string]HandlerFunc)
+
+	return &Client{conn, handlers}
 }
 
 func (c *Client) execute(cmd string) error {
-	return c.conn.Writer.WriteString(getTag() + " " + cmd)
+	tag := getTag()
+	return c.conn.Writer.WriteString(tag + " " + cmd)
 }
 
 func (c *Client) Login(username, password string) error {

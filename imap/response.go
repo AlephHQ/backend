@@ -54,6 +54,25 @@ func readAtom(reader *bufio.Reader) (string, error) {
 	return atom, nil
 }
 
+func readCode(reader *bufio.Reader) (string, error) {
+	code := ""
+	for {
+		r, _, err := reader.ReadRune()
+		if err != nil {
+			return "", err
+		}
+
+		if r == respCodeEnd {
+			code += string(r)
+			break
+		}
+
+		code += string(r)
+	}
+
+	return code, nil
+}
+
 func Parse(raw string) *Response {
 	resp := &Response{Raw: raw}
 	reader := bufio.NewReader(strings.NewReader(resp.Raw))
@@ -73,11 +92,11 @@ func Parse(raw string) *Response {
 	resp.StatusResp = StatusResponse(atom)
 
 	// Attempt to read status response code
-	atom, err = readAtom(reader)
+	code, err := readCode(reader)
 	if err != nil {
 		log.Panic(err)
 	}
-	resp.StatusRespCode = StatusResponseCode(atom)
+	resp.StatusRespCode = StatusResponseCode(code)
 
 	return resp
 }

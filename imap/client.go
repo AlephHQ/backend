@@ -16,6 +16,8 @@ type Client struct {
 	lock     sync.Mutex
 	wg       sync.WaitGroup
 	handlers map[string]HandlerFunc
+
+	capabilities []string
 }
 
 func New(conn *Conn) *Client {
@@ -31,14 +33,6 @@ func (c *Client) execute(cmd string) error {
 	tag := getTag()
 	c.registerHandler(tag, func(resp *Response) {
 		log.Println(resp.Tag, resp.StatusResp, resp.StatusRespCode)
-
-		// if resp.StatusResp == StatusResponseBYE {
-		// 	log.Println("Closing connection ...")
-		// 	c.wg.Done()
-		// 	c.conn.Close()
-		// } else {
-		// 	c.wg.Done()
-		// }
 
 		c.wg.Done()
 	})
@@ -68,6 +62,7 @@ func (c *Client) Logout() error {
 	}
 
 	c.wg.Wait()
+	c.conn.Close()
 	return nil
 }
 

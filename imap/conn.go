@@ -3,7 +3,6 @@ package imap
 import (
 	"bufio"
 	"crypto/tls"
-	"log"
 	"net"
 )
 
@@ -14,24 +13,6 @@ type Conn struct {
 	*Writer
 
 	isTLS bool
-}
-
-func (c *Conn) Read() {
-	resp := ""
-	for {
-		r, _, err := c.ReadRune()
-		if err != nil {
-			log.Panic(err)
-		}
-
-		if r == '\n' {
-			break
-		}
-
-		resp = resp + string(r)
-	}
-
-	log.Println(resp)
 }
 
 func Dial(network, addr string) (*Client, error) {

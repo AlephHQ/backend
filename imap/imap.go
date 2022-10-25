@@ -1,7 +1,5 @@
 package imap
 
-import "strings"
-
 // RFC3501 Section 3
 type ConnectionState int
 
@@ -40,32 +38,3 @@ const (
 	StatusResponseCodeUIDValidity    StatusResponseCode = "UIDVALIDITY"
 	StatusResponseCodeUnseen         StatusResponseCode = "UNSEEN"
 )
-
-type Response struct {
-	// Raw contains the original response in its raw format
-	Raw string
-
-	// A tag associated with the imap response
-	Tag string
-
-	// Status Response
-	StatusResp StatusResponse
-
-	// StatusResponseCode
-	StatusRespCode StatusResponseCode
-
-	// Arguments
-	Arguments interface{}
-}
-
-func NewResponse(raw string) *Response {
-	return &Response{Raw: raw}
-}
-
-func (resp *Response) Parse() *Response {
-	elems := strings.Split(resp.Raw, " ")
-	resp.Tag = elems[0]
-	resp.StatusResp = StatusResponse(elems[1])
-
-	return resp
-}

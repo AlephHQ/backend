@@ -9,6 +9,8 @@ import (
 const (
 	space = ' '
 	star  = '*'
+	cr    = '\r'
+	lf    = '\n'
 )
 
 type Response struct {

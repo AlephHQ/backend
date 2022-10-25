@@ -3,6 +3,7 @@ package imap
 import (
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"sync"
 )
@@ -13,6 +14,7 @@ type Client struct {
 	conn *Conn
 
 	lock     sync.Mutex
+	wg       sync.WaitGroup
 	handlers map[string]HandlerFunc
 }
 
@@ -32,10 +34,14 @@ func (c *Client) execute(cmd string) error {
 
 		if resp.StatusResp == StatusResponseBYE {
 			log.Println("Closing connection ...")
+			c.wg.Done()
 			c.conn.Close()
+		} else {
+			c.wg.Done()
 		}
 	})
 
+	c.wg.Add(1)
 	return c.conn.Writer.WriteString(tag + " " + cmd)
 }
 
@@ -55,6 +61,7 @@ func (c *Client) Logout() error {
 		return err
 	}
 
+	c.wg.Wait()
 	return nil
 }
 
@@ -63,12 +70,12 @@ func (c *Client) Read() {
 		respRaw := ""
 		for {
 			r, _, err := c.conn.ReadRune()
-			if err != nil {
-				log.Panic(err)
+			if err == io.EOF || r == lf {
+				break
 			}
 
-			if r == '\n' {
-				break
+			if err != nil {
+				log.Panic(err)
 			}
 
 			respRaw = respRaw + string(r)

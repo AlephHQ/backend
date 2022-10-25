@@ -31,6 +31,7 @@ func (c *Client) execute(cmd string) error {
 		log.Println(resp.Raw)
 
 		if resp.StatusResp == StatusResponseBYE {
+			log.Println("Closing connection ...")
 			c.conn.Close()
 		}
 	})

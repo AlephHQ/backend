@@ -73,10 +73,10 @@ func readTillEOF(reader *bufio.Reader) (string, error) {
 		result += string(r)
 	}
 
-	return result, nil
+	return strings.Trim(result, " "), nil
 }
 
-func readCode(reader *bufio.Reader) (string, error) {
+func readStatusRespCode(reader *bufio.Reader) (string, error) {
 	code := ""
 
 	// is this a status response code?
@@ -131,7 +131,7 @@ func Parse(raw string) *Response {
 	resp.StatusResp = StatusResponse(atom)
 
 	// Attempt to read status response code
-	code, err := readCode(reader)
+	code, err := readStatusRespCode(reader)
 
 	if err != nil && err != ErrNotStatusRespCode {
 		log.Panic(err)

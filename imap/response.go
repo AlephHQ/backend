@@ -48,6 +48,9 @@ type Response struct {
 	// Capabilities
 	Capabilities []string
 
+	// Arguments
+	Arguments interface{}
+
 	// Information
 	Information string
 }

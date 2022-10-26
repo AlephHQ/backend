@@ -56,20 +56,11 @@ func (c *Client) waitForAndHandleGreeting() error {
 	return nil
 }
 
-func (c *Client) execute(cmd string) error {
+func (c *Client) execute(cmd string, handler HandlerFunc) error {
 	tag := getTag()
-	c.registerHandler(tag, func(resp *Response) {
-		log.Println(resp.Tag, resp.StatusResp, resp.StatusRespCode, resp.Information)
-
-		if resp.StatusRespCode == StatusResponseCodeCapability && len(resp.Capabilities) > 0 {
-			c.capabilities = make([]string, 0)
-			c.capabilities = append(c.capabilities, resp.Capabilities...)
-		}
-
-		c.wg.Done()
-	})
-
+	c.registerHandler(tag, handler)
 	c.wg.Add(1)
+
 	return c.conn.Writer.WriteString(tag + " " + cmd)
 }
 
@@ -80,7 +71,7 @@ func (c *Client) registerHandler(tag string, f HandlerFunc) {
 }
 
 func (c *Client) handleUnsolicitedResp(resp *Response) {
-	log.Println(resp.Tag, resp.StatusResp, resp.StatusRespCode, resp.Information)
+	log.Println(resp.Raw)
 }
 
 func (c *Client) readOne() (string, error) {
@@ -101,6 +92,12 @@ func (c *Client) readOne() (string, error) {
 	return respRaw, nil
 }
 
+func (c *Client) setState(state ConnectionState) {
+	c.slock.Lock()
+	c.state = state
+	c.slock.Unlock()
+}
+
 // BEGIN EXPORTED
 
 func New(conn *Conn) *Client {
@@ -115,21 +112,6 @@ func New(conn *Conn) *Client {
 	go client.Read()
 
 	return client
-}
-
-func (c *Client) Login(username, password string) error {
-	return c.execute(fmt.Sprintf("login %s %s", username, password))
-}
-
-func (c *Client) Logout() error {
-	err := c.execute("logout")
-	if err != nil {
-		return err
-	}
-
-	c.wg.Wait()
-	c.conn.Close()
-	return nil
 }
 
 func (c *Client) Read() {
@@ -154,6 +136,51 @@ func (c *Client) Capabilities() []string {
 	return c.capabilities
 }
 
+func (c *Client) Login(username, password string) error {
+	handler := func(resp *Response) {
+		log.Println(resp.Raw)
+
+		if resp.StatusRespCode == StatusResponseCodeCapability && len(resp.Capabilities) > 0 {
+			c.capabilities = make([]string, 0)
+			c.capabilities = append(c.capabilities, resp.Capabilities...)
+		}
+
+		c.wg.Done()
+	}
+
+	return c.execute(fmt.Sprintf("login %s %s", username, password), handler)
+}
+
+func (c *Client) Logout() error {
+	handler := func(resp *Response) {
+		log.Println(resp.Raw)
+
+		c.setState(LogoutState)
+
+		c.wg.Done()
+	}
+
+	err := c.execute("logout", handler)
+	if err != nil {
+		return err
+	}
+
+	c.wg.Wait()
+	c.conn.Close()
+
+	return nil
+}
+
 func (c *Client) Select() error {
-	return c.execute("select inbox")
+	handler := func(resp *Response) {
+		log.Println(resp.Raw)
+
+		if resp.StatusResp == StatusResponseOK {
+			c.setState(SelectedState)
+		}
+
+		c.wg.Done()
+	}
+
+	return c.execute("select inbox", handler)
 }

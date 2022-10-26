@@ -32,7 +32,7 @@ func New(conn *Conn) *Client {
 func (c *Client) execute(cmd string) error {
 	tag := getTag()
 	c.registerHandler(tag, func(resp *Response) {
-		log.Println(resp.Tag, resp.StatusResp, resp.StatusRespCode)
+		log.Println(resp.Tag, resp.StatusResp, resp.Information)
 
 		c.wg.Done()
 	})

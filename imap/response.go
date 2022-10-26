@@ -149,6 +149,8 @@ func Parse(raw string) *Response {
 		log.Panic(err)
 	}
 
+	// Only way we get here is if err is nil or we actually
+	// have a status response code.
 	if err != ErrNotStatusRespCode {
 		code = strings.Trim(code, "[]")
 		codeArray := strings.Split(code, " ")

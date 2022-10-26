@@ -29,6 +29,7 @@ const (
 )
 
 var ErrNotStatusRespCode = errors.New("not a status response code")
+var ErrStatusNotOK = errors.New("status not ok")
 
 type Response struct {
 	// Raw contains the original response in its raw format

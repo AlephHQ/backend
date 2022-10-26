@@ -16,4 +16,9 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
+
+	err = client.Select()
+	if err != nil {
+		log.Panic(err)
+	}
 }

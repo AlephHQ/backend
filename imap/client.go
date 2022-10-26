@@ -1,14 +1,11 @@
 package imap
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"log"
 	"sync"
 )
-
-var ErrStatusNotOK = errors.New("status not ok")
 
 type Client struct {
 	conn *Conn
@@ -23,14 +20,13 @@ type Client struct {
 	slock sync.Mutex
 }
 
-func New(conn *Conn) *Client {
-	handlers := make(map[string]HandlerFunc)
-	client := &Client{conn: conn, handlers: handlers}
+// BEGIN UNEXPORTED
 
+func (c *Client) waitForAndHandleGreeting() error {
 	greeting := ""
 	var err error
 	for greeting == "" {
-		greeting, err = client.readOne()
+		greeting, err = c.readOne()
 		if err != nil {
 			log.Panic(err)
 		}
@@ -38,34 +34,37 @@ func New(conn *Conn) *Client {
 
 	resp := Parse(greeting)
 	if resp.StatusResp != StatusResponseOK {
-		log.Panic("not a greeting")
+		return ErrStatusNotOK
 	} else {
 		log.Println("Connected")
 	}
 
 	if resp.StatusRespCode == StatusResponseCodeCapability && len(resp.Capabilities) > 0 {
-		client.capabilities = append(client.capabilities, resp.Capabilities...)
+		c.capabilities = append(c.capabilities, resp.Capabilities...)
 	}
 
-	client.slock.Lock()
+	c.slock.Lock()
 	if resp.StatusResp == StatusResponseOK {
-		client.state = NotAuthenticatedState
+		c.state = NotAuthenticatedState
 	}
 
 	if resp.StatusResp == StatusResponsePREAUTH {
-		client.state = AuthenticatedState
+		c.state = AuthenticatedState
 	}
-	client.slock.Unlock()
+	c.slock.Unlock()
 
-	go client.Read()
-
-	return client
+	return nil
 }
 
 func (c *Client) execute(cmd string) error {
 	tag := getTag()
 	c.registerHandler(tag, func(resp *Response) {
 		log.Println(resp.Tag, resp.StatusResp, resp.StatusRespCode, resp.Information)
+
+		if resp.StatusRespCode == StatusResponseCodeCapability && len(resp.Capabilities) > 0 {
+			c.capabilities = make([]string, 0)
+			c.capabilities = append(c.capabilities, resp.Capabilities...)
+		}
 
 		c.wg.Done()
 	})
@@ -82,6 +81,40 @@ func (c *Client) registerHandler(tag string, f HandlerFunc) {
 
 func (c *Client) handleUnsolicitedResp(resp *Response) {
 	log.Println(resp.Tag, resp.StatusResp, resp.StatusRespCode, resp.Information)
+}
+
+func (c *Client) readOne() (string, error) {
+	respRaw := ""
+	for {
+		r, _, err := c.conn.ReadRune()
+		if err == io.EOF || r == lf {
+			break
+		}
+
+		if err != nil {
+			return "", err
+		}
+
+		respRaw += string(r)
+	}
+
+	return respRaw, nil
+}
+
+// BEGIN EXPORTED
+
+func New(conn *Conn) *Client {
+	handlers := make(map[string]HandlerFunc)
+	client := &Client{conn: conn, handlers: handlers}
+
+	err := client.waitForAndHandleGreeting()
+	if err != nil {
+		log.Panic(err)
+	}
+
+	go client.Read()
+
+	return client
 }
 
 func (c *Client) Login(username, password string) error {
@@ -117,20 +150,10 @@ func (c *Client) Read() {
 	}
 }
 
-func (c *Client) readOne() (string, error) {
-	respRaw := ""
-	for {
-		r, _, err := c.conn.ReadRune()
-		if err == io.EOF || r == lf {
-			break
-		}
+func (c *Client) Capabilities() []string {
+	return c.capabilities
+}
 
-		if err != nil {
-			return "", err
-		}
-
-		respRaw += string(r)
-	}
-
-	return respRaw, nil
+func (c *Client) Select() error {
+	return c.execute("select inbox")
 }

@@ -35,6 +35,9 @@ type Response struct {
 	// StatusResponseCode
 	StatusRespCode StatusResponseCode
 
+	// Capabilities
+	Capabilities []string
+
 	// Information
 	Information string
 }

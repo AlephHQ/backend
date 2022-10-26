@@ -42,7 +42,13 @@ func New(conn *Conn) *Client {
 	}
 
 	client.slock.Lock()
-	client.state = NotAuthenticatedState
+	if resp.StatusResp == StatusResponseOK {
+		client.state = NotAuthenticatedState
+	}
+
+	if resp.StatusResp == StatusResponsePREAUTH {
+		client.state = AuthenticatedState
+	}
 	client.slock.Unlock()
 
 	go client.Read()

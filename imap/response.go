@@ -23,7 +23,7 @@ type ResponseType string
 
 const (
 	ResponseTypeStatusResp              ResponseType = "status"
-	ResponseTypeServerMailBoxStatusResp ResponseType = "server status"
+	ResponseTypeServerMailBoxStatusResp ResponseType = "server mailbox status"
 	ResponseTypeMessageStatus           ResponseType = "message status"
 	ResponseTypeCommandContinuationReq  ResponseType = "continuation request"
 )
@@ -35,24 +35,27 @@ type Response struct {
 	// Raw contains the original response in its raw format
 	Raw string
 
-	// A tag associated with the imap response
-	// can also be a * if this is a untagged response
-	Tag string
+	// Fields contains all the different fields received
+	// in the response
+	Fields []string
 
-	// Status Response
-	StatusResp StatusResponse
+	// Type indicates what type of response we're dealing with.
+	Type ResponseType
 
-	// StatusResponseCode
-	StatusRespCode StatusResponseCode
+	// Tagged indicates whether this is a tagged response
+	Tagged bool
+}
 
-	// Capabilities
-	Capabilities []string
+func NewResponse(raw string) *Response {
+	resp := &Response{}
+	resp.Raw = raw
+	resp.Fields = make([]string, 0)
 
-	// Arguments
-	Arguments interface{}
+	return resp
+}
 
-	// Information
-	Information string
+func (resp *Response) AddField(field string) {
+	resp.Fields = append(resp.Fields, field)
 }
 
 func readAtom(reader *bufio.Reader) (string, error) {
@@ -129,26 +132,31 @@ func readStatusRespCode(reader *bufio.Reader) (string, error) {
 }
 
 func Parse(raw string) *Response {
-	resp := &Response{Raw: raw}
+	resp := NewResponse(raw)
 	reader := bufio.NewReader(strings.NewReader(resp.Raw))
 
-	// Attempt to read the Tag
+	// Read the first element in the response,
+	// whether that be a star (*) or a tag
 	atom, err := readAtom(reader)
 	if err != nil {
 		log.Panic(err)
 	}
-	resp.Tag = atom
+	resp.AddField(atom)
+	resp.Tagged = (atom != string(star)) && (atom != string(plus))
+	if atom == string(plus) {
+		resp.Type = ResponseTypeCommandContinuationReq
+	}
 
-	// Attempt to read status response
+	// Read the second element. This could be a status response
+	// or a piece of data
 	atom, err = readAtom(reader)
 	if err != nil {
 		log.Panic(err)
 	}
-	resp.StatusResp = StatusResponse(atom)
+	resp.AddField(atom)
 
-	// Attempt to read status response code
+	// Read the next element in line
 	code, err := readStatusRespCode(reader)
-
 	if err != nil && err != ErrNotStatusRespCode {
 		log.Panic(err)
 	}
@@ -156,13 +164,7 @@ func Parse(raw string) *Response {
 	// Only way we get here is if err is nil or we actually
 	// have a status response code.
 	if err != ErrNotStatusRespCode {
-		code = strings.Trim(code, "[]")
-		codeArray := strings.Split(code, " ")
-		resp.StatusRespCode = StatusResponseCode(codeArray[0])
-
-		if resp.StatusRespCode == StatusResponseCodeCapability {
-			resp.Capabilities = append(resp.Capabilities, codeArray[1:]...)
-		}
+		resp.AddField(code)
 	}
 
 	// no resp status code, read the rest
@@ -170,7 +172,7 @@ func Parse(raw string) *Response {
 	if err != nil {
 		log.Panic(err)
 	}
-	resp.Information = rest
+	resp.AddField(rest)
 
 	return resp
 }

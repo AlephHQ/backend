@@ -18,6 +18,8 @@ type Client struct {
 
 	state ConnectionState
 	slock sync.Mutex
+
+	mbox *MailboxStatus
 }
 
 // BEGIN UNEXPORTED
@@ -33,25 +35,25 @@ func (c *Client) waitForAndHandleGreeting() error {
 	}
 
 	resp := Parse(greeting)
-	if resp.StatusResp != StatusResponseOK {
+	if StatusResponse(resp.Fields[1]) != StatusResponseOK {
 		return ErrStatusNotOK
 	} else {
 		log.Println("Connected")
 	}
 
-	if resp.StatusRespCode == StatusResponseCodeCapability && len(resp.Capabilities) > 0 {
-		c.capabilities = append(c.capabilities, resp.Capabilities...)
-	}
+	// if resp.StatusRespCode == StatusResponseCodeCapability && len(resp.Capabilities) > 0 {
+	// 	c.capabilities = append(c.capabilities, resp.Capabilities...)
+	// }
 
-	c.slock.Lock()
-	if resp.StatusResp == StatusResponseOK {
-		c.state = NotAuthenticatedState
-	}
+	// c.slock.Lock()
+	// if resp.StatusResp == StatusResponseOK {
+	// 	c.state = NotAuthenticatedState
+	// }
 
-	if resp.StatusResp == StatusResponsePREAUTH {
-		c.state = AuthenticatedState
-	}
-	c.slock.Unlock()
+	// if resp.StatusResp == StatusResponsePREAUTH {
+	// 	c.state = AuthenticatedState
+	// }
+	// c.slock.Unlock()
 
 	return nil
 }
@@ -71,7 +73,15 @@ func (c *Client) registerHandler(tag string, f HandlerFunc) {
 }
 
 func (c *Client) handleUnsolicitedResp(resp *Response) {
-	log.Println(resp.Raw)
+	if resp.Fields[0] == string(plus) {
+		return
+	}
+
+	switch StatusResponse(resp.Fields[1]) {
+	case StatusResponseBAD, StatusResponseBYE, StatusResponseOK, StatusResponseNO, StatusResponsePREAUTH:
+		log.Println(resp.Raw)
+		return
+	}
 }
 
 func (c *Client) readOne() (string, error) {
@@ -123,9 +133,9 @@ func (c *Client) Read() {
 
 		if respRaw != "" {
 			resp := Parse(respRaw)
-			if handler := c.handlers[resp.Tag]; handler != nil {
+			if handler := c.handlers[resp.Fields[0]]; handler != nil {
 				handler(resp)
-			} else {
+			} else if resp.Fields[1] == string(star) {
 				c.handleUnsolicitedResp(resp)
 			}
 		}
@@ -140,10 +150,14 @@ func (c *Client) Login(username, password string) error {
 	handler := func(resp *Response) {
 		log.Println(resp.Raw)
 
-		if resp.StatusRespCode == StatusResponseCodeCapability && len(resp.Capabilities) > 0 {
-			c.capabilities = make([]string, 0)
-			c.capabilities = append(c.capabilities, resp.Capabilities...)
+		if StatusResponse(resp.Fields[1]) == StatusResponseOK {
+			c.setState(AuthenticatedState)
 		}
+
+		// if resp.StatusRespCode == StatusResponseCodeCapability && len(resp.Capabilities) > 0 {
+		// 	c.capabilities = make([]string, 0)
+		// 	c.capabilities = append(c.capabilities, resp.Capabilities...)
+		// }
 
 		c.wg.Done()
 	}
@@ -171,16 +185,17 @@ func (c *Client) Logout() error {
 	return nil
 }
 
-func (c *Client) Select() error {
+func (c *Client) Select(name string) error {
 	handler := func(resp *Response) {
 		log.Println(resp.Raw)
 
-		if resp.StatusResp == StatusResponseOK {
+		if StatusResponse(resp.Fields[1]) == StatusResponseOK {
 			c.setState(SelectedState)
 		}
 
 		c.wg.Done()
 	}
 
-	return c.execute("select inbox", handler)
+	c.mbox = NewMailboxStatus().SetName(name)
+	return c.execute(fmt.Sprintf("select %s", name), handler)
 }

@@ -39,6 +39,12 @@ func New(conn *Conn) *Client {
 	resp := Parse(greeting)
 	if resp.StatusResp != StatusResponseOK {
 		log.Panic("not a greeting")
+	} else {
+		log.Println("Connected")
+	}
+
+	if resp.StatusRespCode == StatusResponseCodeCapability && len(resp.Capabilities) > 0 {
+		client.capabilities = append(client.capabilities, resp.Capabilities...)
 	}
 
 	client.slock.Lock()

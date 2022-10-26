@@ -19,6 +19,15 @@ const (
 	plus          = '+'
 )
 
+type ResponseType string
+
+const (
+	ResponseTypeStatusResp              ResponseType = "status"
+	ResponseTypeServerMailBoxStatusResp ResponseType = "server status"
+	ResponseTypeMessageStatus           ResponseType = "message status"
+	ResponseTypeCommandContinuationReq  ResponseType = "continuation request"
+)
+
 var ErrNotStatusRespCode = errors.New("not a status response code")
 
 type Response struct {
@@ -141,7 +150,13 @@ func Parse(raw string) *Response {
 	}
 
 	if err != ErrNotStatusRespCode {
-		resp.StatusRespCode = StatusResponseCode(code)
+		code = strings.Trim(code, "[]")
+		codeArray := strings.Split(code, " ")
+		resp.StatusRespCode = StatusResponseCode(codeArray[0])
+
+		if resp.StatusRespCode == StatusResponseCodeCapability {
+			resp.Capabilities = append(resp.Capabilities, codeArray[1:]...)
+		}
 	}
 
 	// no resp status code, read the rest

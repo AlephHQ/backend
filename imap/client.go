@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"strings"
 	"sync"
 )
 
@@ -35,25 +36,29 @@ func (c *Client) waitForAndHandleGreeting() error {
 	}
 
 	resp := Parse(greeting)
-	if StatusResponse(resp.Fields[1]) != StatusResponseOK {
+	status := StatusResponse(resp.Fields[1])
+	switch status {
+	case StatusResponseOK:
+		c.setState(NotAuthenticatedState)
+	case StatusResponsePREAUTH:
+		c.setState(AuthenticatedState)
+	case StatusResponseBAD, StatusResponseBYE, StatusResponseNO:
 		return ErrStatusNotOK
-	} else {
-		log.Println("Connected")
 	}
 
-	// if resp.StatusRespCode == StatusResponseCodeCapability && len(resp.Capabilities) > 0 {
-	// 	c.capabilities = append(c.capabilities, resp.Capabilities...)
-	// }
+	log.Println("Connected")
 
-	// c.slock.Lock()
-	// if resp.StatusResp == StatusResponseOK {
-	// 	c.state = NotAuthenticatedState
-	// }
+	if resp.Fields[2][0] == respCodeStart {
+		fields := strings.Split(strings.Trim(resp.Fields[2], "[]"), " ")
 
-	// if resp.StatusResp == StatusResponsePREAUTH {
-	// 	c.state = AuthenticatedState
-	// }
-	// c.slock.Unlock()
+		code := StatusResponseCode(fields[0])
+
+		switch code {
+		case StatusResponseCodeCapability:
+			c.capabilities = make([]string, 0)
+			c.capabilities = append(c.capabilities, fields[1:]...)
+		}
+	}
 
 	return nil
 }
@@ -77,11 +82,23 @@ func (c *Client) handleUnsolicitedResp(resp *Response) {
 		return
 	}
 
-	switch StatusResponse(resp.Fields[1]) {
-	case StatusResponseBAD, StatusResponseBYE, StatusResponseOK, StatusResponseNO, StatusResponsePREAUTH:
+	status := StatusResponse(resp.Fields[1])
+	switch status {
+	case StatusResponseBAD, StatusResponseBYE, StatusResponseNO:
 		log.Println(resp.Raw)
 		return
+	case StatusResponseOK:
+		if resp.Fields[2][0] == respCodeStart {
+			fields := strings.Split(strings.Trim(resp.Fields[2], "[]"), " ")
+
+			code := fields[0]
+			log.Println(code)
+		} else {
+			log.Println(resp.Fields[2])
+		}
 	}
+
+	log.Println(resp.Raw)
 }
 
 func (c *Client) readOne() (string, error) {
@@ -135,7 +152,7 @@ func (c *Client) Read() {
 			resp := Parse(respRaw)
 			if handler := c.handlers[resp.Fields[0]]; handler != nil {
 				handler(resp)
-			} else if resp.Fields[1] == string(star) {
+			} else if resp.Fields[0] == string(star) {
 				c.handleUnsolicitedResp(resp)
 			}
 		}
@@ -154,10 +171,17 @@ func (c *Client) Login(username, password string) error {
 			c.setState(AuthenticatedState)
 		}
 
-		// if resp.StatusRespCode == StatusResponseCodeCapability && len(resp.Capabilities) > 0 {
-		// 	c.capabilities = make([]string, 0)
-		// 	c.capabilities = append(c.capabilities, resp.Capabilities...)
-		// }
+		if resp.Fields[2][0] == respCodeStart {
+			fields := strings.Split(strings.Trim(resp.Fields[2], "[]"), " ")
+
+			code := StatusResponseCode(fields[0])
+
+			switch code {
+			case StatusResponseCodeCapability:
+				c.capabilities = make([]string, 0)
+				c.capabilities = append(c.capabilities, fields[1:]...)
+			}
+		}
 
 		c.wg.Done()
 	}

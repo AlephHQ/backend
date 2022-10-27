@@ -131,6 +131,10 @@ func readStatusRespCode(reader *bufio.Reader) (string, error) {
 	return code, nil
 }
 
+func (resp *Response) statusResponseCode() string {
+	return ""
+}
+
 func Parse(raw string) *Response {
 	resp := NewResponse(raw)
 	reader := bufio.NewReader(strings.NewReader(resp.Raw))

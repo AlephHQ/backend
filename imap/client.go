@@ -320,7 +320,6 @@ func (c *Client) Logout() error {
 
 func (c *Client) Select(name string) error {
 	handler := func(resp *Response) {
-
 		status := StatusResponse(resp.Fields[1])
 		switch status {
 		case StatusResponseOK:

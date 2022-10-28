@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"ncp/backend/imap"
 )
@@ -21,5 +22,7 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
-	log.Println(client.Mailbox())
+
+	b, _ := json.Marshal(client.Mailbox())
+	log.Println("mailbox", string(b))
 }

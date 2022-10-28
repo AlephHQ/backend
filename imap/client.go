@@ -1,6 +1,7 @@
 package imap
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -23,6 +24,8 @@ type Client struct {
 
 	mbox *MailboxStatus
 }
+
+var ErrNotSelectedState = errors.New("not in selected state")
 
 // BEGIN UNEXPORTED
 
@@ -297,7 +300,33 @@ func (c *Client) Login(username, password string) error {
 	return c.execute(fmt.Sprintf("login %s %s", username, password), handler)
 }
 
+func (c *Client) Close() error {
+	if c.state != SelectedState {
+		return ErrNotSelectedState
+	}
+
+	handler := func(resp *Response) {
+		log.Println(resp.Raw)
+
+		status := StatusResponse(resp.Fields[1])
+		switch status {
+		case StatusResponseOK:
+			c.setState(AuthenticatedState)
+			c.mbox = nil
+		}
+	}
+
+	return c.execute("close", handler)
+}
+
 func (c *Client) Logout() error {
+	if c.state == SelectedState {
+		err := c.Close()
+		if err != nil {
+			return err
+		}
+	}
+
 	handler := func(resp *Response) {
 		log.Println(resp.Raw)
 
@@ -336,8 +365,8 @@ func (c *Client) Select(name string) error {
 			log.Println(resp.Fields[2])
 		}
 
-		done <- true
 		c.wg.Done()
+		done <- true
 	}
 
 	c.mbox = NewMailboxStatus().SetName(name)
@@ -346,11 +375,7 @@ func (c *Client) Select(name string) error {
 		return err
 	}
 
-	select {
-	case <-done:
-		log.Println("done")
-	}
-
+	<-done
 	return nil
 }
 

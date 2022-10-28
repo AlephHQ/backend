@@ -139,6 +139,10 @@ func Parse(raw string) *Response {
 	resp := NewResponse(raw)
 	reader := bufio.NewReader(strings.NewReader(resp.Raw))
 
+	if resp.Raw == "" {
+		return resp
+	}
+
 	// Read the first element in the response,
 	// whether that be a star (*) or a tag
 	atom, err := readAtom(reader)

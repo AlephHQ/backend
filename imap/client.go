@@ -236,23 +236,7 @@ func (c *Client) setState(state ConnectionState) {
 	c.slock.Unlock()
 }
 
-// BEGIN EXPORTED
-
-func New(conn *Conn) *Client {
-	handlers := make(map[string]HandlerFunc)
-	client := &Client{conn: conn, handlers: handlers}
-
-	err := client.waitForAndHandleGreeting()
-	if err != nil {
-		log.Panic(err)
-	}
-
-	go client.Read()
-
-	return client
-}
-
-func (c *Client) Read() {
+func (c *Client) read() {
 	for {
 		respRaw, err := c.readOne()
 		if err != nil {
@@ -268,6 +252,22 @@ func (c *Client) Read() {
 			}
 		}
 	}
+}
+
+// BEGIN EXPORTED
+
+func New(conn *Conn) *Client {
+	handlers := make(map[string]HandlerFunc)
+	client := &Client{conn: conn, handlers: handlers}
+
+	err := client.waitForAndHandleGreeting()
+	if err != nil {
+		log.Panic(err)
+	}
+
+	go client.read()
+
+	return client
 }
 
 func (c *Client) Capabilities() []string {
@@ -350,7 +350,6 @@ func (c *Client) Logout() error {
 }
 
 func (c *Client) Select(name string) error {
-	done := make(chan bool, 1)
 	handler := func(resp *Response) {
 		status := StatusResponse(resp.Fields[1])
 		switch status {
@@ -368,7 +367,6 @@ func (c *Client) Select(name string) error {
 		}
 
 		c.wg.Done()
-		done <- true
 	}
 
 	c.mbox = NewMailboxStatus().SetName(name)
@@ -377,7 +375,6 @@ func (c *Client) Select(name string) error {
 		return err
 	}
 
-	<-done
 	return nil
 }
 

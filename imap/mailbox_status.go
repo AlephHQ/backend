@@ -6,15 +6,15 @@ type MailboxStatus struct {
 	Flags          []string
 	PermanentFlags []string
 
-	Exists uint
+	Exists uint64
 
-	Recent uint
+	Recent uint64
 
-	Unseen uint
+	Unseen uint64
 
-	UIDValidity uint
+	UIDValidity uint64
 
-	UIDNext uint
+	UIDNext uint64
 
 	ReadOnly bool
 }
@@ -43,31 +43,31 @@ func (mbs *MailboxStatus) SetPermanentFlags(pflags []string) *MailboxStatus {
 	return mbs
 }
 
-func (mbs *MailboxStatus) SetExists(exists uint) *MailboxStatus {
+func (mbs *MailboxStatus) SetExists(exists uint64) *MailboxStatus {
 	mbs.Exists = exists
 
 	return mbs
 }
 
-func (mbs *MailboxStatus) SetRecent(recent uint) *MailboxStatus {
+func (mbs *MailboxStatus) SetRecent(recent uint64) *MailboxStatus {
 	mbs.Recent = recent
 
 	return mbs
 }
 
-func (mbs *MailboxStatus) SetUnseen(unseen uint) *MailboxStatus {
+func (mbs *MailboxStatus) SetUnseen(unseen uint64) *MailboxStatus {
 	mbs.Unseen = unseen
 
 	return mbs
 }
 
-func (mbs *MailboxStatus) SetUIDValidity(uidvalidity uint) *MailboxStatus {
+func (mbs *MailboxStatus) SetUIDValidity(uidvalidity uint64) *MailboxStatus {
 	mbs.UIDValidity = uidvalidity
 
 	return mbs
 }
 
-func (mbs *MailboxStatus) SetUIDNext(uidnext uint) *MailboxStatus {
+func (mbs *MailboxStatus) SetUIDNext(uidnext uint64) *MailboxStatus {
 	mbs.UIDNext = uidnext
 
 	return mbs

@@ -17,7 +17,7 @@ func main() {
 		log.Panic(err)
 	}
 
-	err = client.Select("inbox")
+	err = client.Select("some")
 	if err != nil {
 		log.Panic(err)
 	}

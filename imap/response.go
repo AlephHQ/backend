@@ -17,6 +17,8 @@ const (
 	respCodeStart = '['
 	respCodeEnd   = ']'
 	plus          = '+'
+	listStart     = '('
+	listEnd       = ')'
 )
 
 type ResponseType string

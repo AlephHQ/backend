@@ -38,3 +38,11 @@ const (
 	StatusResponseCodeUIDValidity    StatusResponseCode = "UIDVALIDITY"
 	StatusResponseCodeUnseen         StatusResponseCode = "UNSEEN"
 )
+
+type DataResponseCode string
+
+const (
+	DataResponseCodeFlags  DataResponseCode = "FLAGS"
+	DataResponseCodeExists DataResponseCode = "EXISTS"
+	DataResponseCodeRecent DataResponseCode = "RECENT"
+)

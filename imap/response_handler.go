@@ -1,3 +1,3 @@
 package imap
 
-type HandlerFunc func(resp *Response)
+type HandlerFunc func(resp *Response) error

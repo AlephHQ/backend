@@ -49,8 +49,6 @@ func (c *Client) waitForAndHandleGreeting() error {
 		return ErrStatusNotOK
 	}
 
-	log.Println("Connected")
-
 	if resp.Fields[2][0] == respCodeStart {
 		fields := strings.Split(strings.Trim(resp.Fields[2], "[]"), " ")
 
@@ -68,10 +66,11 @@ func (c *Client) waitForAndHandleGreeting() error {
 
 func (c *Client) execute(cmd string, handler HandlerFunc) error {
 	tag := getTag()
-	done := make(chan bool)
-	c.registerHandler(tag, func(resp *Response) {
-		handler(resp)
-		done <- true
+	done := make(chan error)
+	c.registerHandler(tag, func(resp *Response) error {
+		err := handler(resp)
+		done <- err
+		return err
 	})
 
 	err := c.conn.Writer.WriteString(tag + " " + cmd)
@@ -79,8 +78,7 @@ func (c *Client) execute(cmd string, handler HandlerFunc) error {
 		log.Panic(err)
 	}
 
-	<-done
-	return nil
+	return <-done
 }
 
 func (c *Client) registerHandler(tag string, f HandlerFunc) {
@@ -264,18 +262,18 @@ func (c *Client) read() {
 
 // BEGIN EXPORTED
 
-func New(conn *Conn) *Client {
+func New(conn *Conn) (*Client, error) {
 	handlers := make(map[string]HandlerFunc)
 	client := &Client{conn: conn, handlers: handlers}
 
 	err := client.waitForAndHandleGreeting()
 	if err != nil {
-		log.Panic(err)
+		return nil, err
 	}
 
 	go client.read()
 
-	return client
+	return client, nil
 }
 
 func (c *Client) Capabilities() []string {
@@ -283,11 +281,13 @@ func (c *Client) Capabilities() []string {
 }
 
 func (c *Client) Login(username, password string) error {
-	handler := func(resp *Response) {
+	handler := func(resp *Response) error {
 		log.Println(resp.Raw)
 
-		if StatusResponse(resp.Fields[1]) == StatusResponseOK {
-			c.setState(AuthenticatedState)
+		status := StatusResponse(resp.Fields[1])
+		switch status {
+		case StatusResponseNO:
+			return fmt.Errorf("error logging in: %s", resp.Fields[2])
 		}
 
 		if resp.Fields[2][0] == respCodeStart {
@@ -302,19 +302,18 @@ func (c *Client) Login(username, password string) error {
 			}
 		}
 
+		return nil
 	}
 
 	return c.execute(fmt.Sprintf("login %s %s", username, password), handler)
 }
 
 func (c *Client) Close() error {
-	log.Println("Close")
-
 	if c.state != SelectedState {
 		return ErrNotSelectedState
 	}
 
-	handler := func(resp *Response) {
+	handler := func(resp *Response) error {
 		status := StatusResponse(resp.Fields[1])
 		switch status {
 		case StatusResponseOK:
@@ -322,6 +321,7 @@ func (c *Client) Close() error {
 			c.mbox = nil
 		}
 
+		return nil
 	}
 
 	return c.execute("close", handler)
@@ -335,11 +335,13 @@ func (c *Client) Logout() error {
 		}
 	}
 
-	handler := func(resp *Response) {
+	handler := func(resp *Response) error {
 		log.Println(resp.Raw)
 
 		c.setState(LogoutState)
 		c.mbox = nil
+
+		return nil
 	}
 
 	err := c.execute("logout", handler)
@@ -353,7 +355,7 @@ func (c *Client) Logout() error {
 }
 
 func (c *Client) Select(name string) error {
-	handler := func(resp *Response) {
+	handler := func(resp *Response) error {
 		status := StatusResponse(resp.Fields[1])
 		switch status {
 		case StatusResponseOK:
@@ -368,6 +370,8 @@ func (c *Client) Select(name string) error {
 		case StatusResponseNO:
 			log.Println(resp.Fields[2])
 		}
+
+		return nil
 	}
 
 	c.mbox = NewMailboxStatus().SetName(name)

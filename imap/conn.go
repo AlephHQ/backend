@@ -26,7 +26,7 @@ func Dial(network, addr string) (*Client, error) {
 	conn.Reader = bufio.NewReader(c)
 	conn.Writer = NewWriter(c)
 
-	return New(conn), nil
+	return New(conn)
 }
 
 func DialWithTLS(network, addr string) (*Client, error) {
@@ -41,5 +41,5 @@ func DialWithTLS(network, addr string) (*Client, error) {
 	conn.Writer = NewWriter(c)
 	conn.isTLS = true
 
-	return New(conn), nil
+	return New(conn)
 }

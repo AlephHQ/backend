@@ -96,12 +96,12 @@ func (c *Client) handleUnsolicitedResp(resp *Response) {
 			reader := strings.NewReader(fields)
 			for {
 				r, _, err := reader.ReadRune()
-				if err != nil {
-					log.Panic(err)
+				if r == space || err == io.EOF {
+					break
 				}
 
-				if r == space {
-					break
+				if err != nil {
+					log.Panic(err)
 				}
 
 				code += string(r)
@@ -319,6 +319,7 @@ func (c *Client) Logout() error {
 }
 
 func (c *Client) Select(name string) error {
+	done := make(chan bool, 1)
 	handler := func(resp *Response) {
 		status := StatusResponse(resp.Fields[1])
 		switch status {
@@ -335,11 +336,22 @@ func (c *Client) Select(name string) error {
 			log.Println(resp.Fields[2])
 		}
 
+		done <- true
 		c.wg.Done()
 	}
 
 	c.mbox = NewMailboxStatus().SetName(name)
-	return c.execute(fmt.Sprintf("select %s", name), handler)
+	err := c.execute(fmt.Sprintf("select %s", name), handler)
+	if err != nil {
+		return err
+	}
+
+	select {
+	case <-done:
+		log.Println("done")
+	}
+
+	return nil
 }
 
 func (c *Client) Mailbox() *MailboxStatus {

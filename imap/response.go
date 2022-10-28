@@ -91,7 +91,9 @@ func readTillEOF(reader *bufio.Reader) (string, error) {
 			return "", err
 		}
 
-		result += string(r)
+		if r != cr && r != lf {
+			result += string(r)
+		}
 	}
 
 	return strings.Trim(result, " "), nil

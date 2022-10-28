@@ -301,19 +301,21 @@ func (c *Client) Login(username, password string) error {
 }
 
 func (c *Client) Close() error {
+	log.Println("Close")
+
 	if c.state != SelectedState {
 		return ErrNotSelectedState
 	}
 
 	handler := func(resp *Response) {
-		log.Println(resp.Raw)
-
 		status := StatusResponse(resp.Fields[1])
 		switch status {
 		case StatusResponseOK:
 			c.setState(AuthenticatedState)
 			c.mbox = nil
 		}
+
+		c.wg.Done()
 	}
 
 	return c.execute("close", handler)

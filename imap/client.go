@@ -69,10 +69,20 @@ func (c *Client) waitForAndHandleGreeting() error {
 
 func (c *Client) execute(cmd string, handler HandlerFunc) error {
 	tag := getTag()
-	c.registerHandler(tag, handler)
+	done := make(chan bool)
+	c.registerHandler(tag, func(resp *Response) {
+		handler(resp)
+		done <- true
+	})
 	c.wg.Add(1)
 
-	return c.conn.Writer.WriteString(tag + " " + cmd)
+	err := c.conn.Writer.WriteString(tag + " " + cmd)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	<-done
+	return nil
 }
 
 func (c *Client) registerHandler(tag string, f HandlerFunc) {

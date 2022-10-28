@@ -325,6 +325,13 @@ func (c *Client) Select(name string) error {
 		switch status {
 		case StatusResponseOK:
 			c.setState(SelectedState)
+
+			// set read and write permissions
+			permissions := StatusResponseCode(strings.Trim(resp.Fields[2], "[]"))
+			if c.mbox != nil {
+				c.mbox.SetReadOnly(permissions == StatusResponseCodeReadOnly)
+			}
+
 		case StatusResponseNO:
 			log.Println(resp.Fields[2])
 		}
@@ -334,4 +341,8 @@ func (c *Client) Select(name string) error {
 
 	c.mbox = NewMailboxStatus().SetName(name)
 	return c.execute(fmt.Sprintf("select %s", name), handler)
+}
+
+func (c *Client) Mailbox() *MailboxStatus {
+	return c.mbox
 }

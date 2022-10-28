@@ -14,7 +14,6 @@ type Client struct {
 	conn *Conn
 
 	hlock    sync.Mutex
-	wg       sync.WaitGroup
 	handlers map[string]HandlerFunc
 
 	capabilities []string
@@ -74,7 +73,6 @@ func (c *Client) execute(cmd string, handler HandlerFunc) error {
 		handler(resp)
 		done <- true
 	})
-	c.wg.Add(1)
 
 	err := c.conn.Writer.WriteString(tag + " " + cmd)
 	if err != nil {
@@ -304,7 +302,6 @@ func (c *Client) Login(username, password string) error {
 			}
 		}
 
-		c.wg.Done()
 	}
 
 	return c.execute(fmt.Sprintf("login %s %s", username, password), handler)
@@ -325,7 +322,6 @@ func (c *Client) Close() error {
 			c.mbox = nil
 		}
 
-		c.wg.Done()
 	}
 
 	return c.execute("close", handler)
@@ -344,8 +340,6 @@ func (c *Client) Logout() error {
 
 		c.setState(LogoutState)
 		c.mbox = nil
-
-		c.wg.Done()
 	}
 
 	err := c.execute("logout", handler)
@@ -353,7 +347,6 @@ func (c *Client) Logout() error {
 		return err
 	}
 
-	c.wg.Wait()
 	c.conn.Close()
 
 	return nil
@@ -375,8 +368,6 @@ func (c *Client) Select(name string) error {
 		case StatusResponseNO:
 			log.Println(resp.Fields[2])
 		}
-
-		c.wg.Done()
 	}
 
 	c.mbox = NewMailboxStatus().SetName(name)

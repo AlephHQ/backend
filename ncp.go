@@ -21,4 +21,9 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
+
+	err = c.Fetch()
+	if err != nil {
+		log.Panic(err)
+	}
 }

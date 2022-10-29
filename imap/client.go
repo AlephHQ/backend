@@ -215,6 +215,8 @@ func (c *Client) handleUnsolicitedResp(resp *Response) {
 				return
 			}
 		}
+	default:
+		log.Println(code)
 	}
 }
 
@@ -375,14 +377,25 @@ func (c *Client) Select(name string) error {
 	}
 
 	c.mbox = NewMailboxStatus().SetName(name)
-	err := c.execute(fmt.Sprintf("select %s", name), handler)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return c.execute(fmt.Sprintf("select %s", name), handler)
 }
 
 func (c *Client) Mailbox() *MailboxStatus {
 	return c.mbox
+}
+
+func (c *Client) Fetch() error {
+	handler := func(resp *Response) error {
+		status := StatusResponse(resp.Fields[1])
+		switch status {
+		case StatusResponseNO:
+			return fmt.Errorf("error fetching: %s", resp.Fields[2])
+		case StatusResponseOK:
+			log.Println(resp.Raw)
+		}
+
+		return nil
+	}
+
+	return c.execute("fetch 1:15 all", handler)
 }

@@ -32,6 +32,8 @@ const (
 
 var ErrNotStatusRespCode = errors.New("not a status response code")
 var ErrStatusNotOK = errors.New("status not ok")
+var ErrFoundSpecialChar = errors.New("found a special char")
+var ErrNotSpecialChar = errors.New("found a non-special char")
 
 type Response struct {
 	// Raw contains the original response in its raw format
@@ -60,6 +62,9 @@ func (resp *Response) AddField(field string) {
 	resp.Fields = append(resp.Fields, field)
 }
 
+// readAtom reads until it finds a special character, and when it does
+// so, it returns the atom that precedes the special character and an
+// error indicating it found a special character
 func readAtom(reader *bufio.Reader) (string, error) {
 	atom := ""
 
@@ -69,55 +74,37 @@ func readAtom(reader *bufio.Reader) (string, error) {
 			return "", err
 		}
 
-		if r == space {
-			break
-		}
-
-		atom += string(r)
-	}
-
-	return atom, nil
-}
-
-func readTillEOF(reader *bufio.Reader) (string, error) {
-	result := ""
-	for {
-		r, _, err := reader.ReadRune()
-		if err == io.EOF {
-			break
-		}
-
-		if err != nil {
-			return "", err
-		}
-
-		if r != cr && r != lf {
-			result += string(r)
+		switch r {
+		case space, star, cr, lf, doubleQuote, plus, respCodeStart, respCodeEnd, listStart, listEnd:
+			reader.UnreadRune()
+			return atom, ErrFoundSpecialChar
+		default:
+			atom += string(r)
 		}
 	}
-
-	return strings.Trim(result, " "), nil
 }
 
-func readStatusRespCode(reader *bufio.Reader) (string, error) {
-	code := ""
-
-	// is this a status response code?
+// readSpecialChar reads a single special character
+func readSpecialChar(reader *bufio.Reader) (rune, error) {
 	r, _, err := reader.ReadRune()
 	if err != nil {
-		return "", err
+		return 0, err
 	}
 
-	if r != respCodeStart {
+	switch r {
+	case space, star, cr, lf, doubleQuote, plus, respCodeStart, respCodeEnd, listStart, listEnd:
+		return r, nil
+	default:
 		reader.UnreadRune()
-		return "", ErrNotStatusRespCode
+		return 0, ErrNotSpecialChar
 	}
+}
 
-	err = reader.UnreadRune()
-	if err != nil {
-		return "", err
-	}
-
+// readRespStatusCodeArgs reads a status response code's
+// arguments, and returns when it finds the "]" special
+// character
+func readRespStatusCodeArgs(reader *bufio.Reader) (string, error) {
+	args := ""
 	for {
 		r, _, err := reader.ReadRune()
 		if err != nil {
@@ -125,14 +112,12 @@ func readStatusRespCode(reader *bufio.Reader) (string, error) {
 		}
 
 		if r == respCodeEnd {
-			code += string(r)
-			break
+			reader.UnreadRune()
+			return args, ErrFoundSpecialChar
 		}
 
-		code += string(r)
+		args += string(r)
 	}
-
-	return code, nil
 }
 
 func Parse(raw string) *Response {
@@ -143,44 +128,88 @@ func Parse(raw string) *Response {
 		return resp
 	}
 
-	// Read the first element in the response,
-	// whether that be a star (*) or a tag
-	atom, err := readAtom(reader)
-	if err != nil {
-		log.Panic(err)
-	}
-	resp.AddField(atom)
-	resp.Tagged = (atom != string(star)) && (atom != string(plus))
-	if atom == string(plus) {
-		resp.Type = ResponseTypeCommandContinuationReq
-	}
-
-	// Read the second element. This could be a status response
-	// or a piece of data
-	atom, err = readAtom(reader)
-	if err != nil {
-		log.Panic(err)
-	}
-	resp.AddField(atom)
-
-	// Read the next element in line
-	code, err := readStatusRespCode(reader)
-	if err != nil && err != ErrNotStatusRespCode {
+	// read the first char with the assumption that
+	// it's the star special char (*)
+	if sp, err := readSpecialChar(reader); err == nil {
+		switch sp {
+		case star, plus:
+			resp.AddField(string(sp))
+			// resp.Type is already false, so no need to set this
+			if sp == plus {
+				resp.Type = ResponseTypeCommandContinuationReq
+			}
+		}
+	} else if err == ErrNotSpecialChar {
+		resp.Tagged = true
+	} else {
 		log.Panic(err)
 	}
 
-	// Only way we get here is if err is nil or we actually
-	// have a status response code.
-	if err != ErrNotStatusRespCode {
-		resp.AddField(code)
-	}
+	var err error
+	for err != io.EOF {
+		var atom string
+		var sp rune
+		// this will read the next atom in the response. If the response is tagged,
+		// this would be
+		atom, err = readAtom(reader)
+		if err == ErrFoundSpecialChar {
+			// log.Println(atom)
+			resp.AddField(atom)
 
-	// no resp status code, read the rest
-	rest, err := readTillEOF(reader)
-	if err != nil {
-		log.Panic(err)
+			sp, err = readSpecialChar(reader)
+			if err != nil {
+				log.Panic(err)
+			}
+
+			if sp != space {
+				switch sp {
+				case listStart:
+					log.Println("list start")
+					// this is a list, read till end of list
+				case respCodeStart:
+					log.Println("status response code start")
+					// this a status response code, read and store
+					// code, then read and store arguments, which
+					// will be handled later by the appropriate
+					// handler
+					code, err := readAtom(reader)
+					if err == ErrFoundSpecialChar {
+						resp.AddField(code)
+
+						// read special character and make sure it
+						// is a space
+						sp, _ = readSpecialChar(reader)
+						if sp != space {
+							log.Panic("expected a space, found " + string(sp))
+						}
+
+						args, err := readRespStatusCodeArgs(reader)
+						if err == ErrFoundSpecialChar {
+							resp.AddField(args)
+
+							sp, _ = readSpecialChar(reader)
+							if sp != respCodeEnd {
+								log.Panic("expected \"]\", found " + string(sp))
+							}
+						}
+					}
+				case cr:
+					sp, err = readSpecialChar(reader)
+					if err == io.EOF {
+						break
+					}
+
+					if err != nil {
+						log.Panic(err)
+					}
+
+					if sp != lf {
+						log.Panic("expected \"\\n\", found " + string(sp))
+					}
+				}
+			}
+		}
 	}
-	resp.AddField(rest)
 
 	return resp
 }

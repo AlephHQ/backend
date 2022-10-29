@@ -39,6 +39,7 @@ func (c *Client) waitForAndHandleGreeting() error {
 	}
 
 	resp := Parse(greeting)
+	log.Println(resp)
 	status := StatusResponse(resp.Fields[1])
 	switch status {
 	case StatusResponseOK:
@@ -49,17 +50,17 @@ func (c *Client) waitForAndHandleGreeting() error {
 		return ErrStatusNotOK
 	}
 
-	if resp.Fields[2][0] == respCodeStart {
-		fields := strings.Split(strings.Trim(resp.Fields[2], "[]"), " ")
+	// if resp.Fields[2][0] == respCodeStart {
+	// 	fields := strings.Split(strings.Trim(resp.Fields[2], "[]"), " ")
 
-		code := StatusResponseCode(fields[0])
+	// 	code := StatusResponseCode(fields[0])
 
-		switch code {
-		case StatusResponseCodeCapability:
-			c.capabilities = make([]string, 0)
-			c.capabilities = append(c.capabilities, fields[1:]...)
-		}
-	}
+	// 	switch code {
+	// 	case StatusResponseCodeCapability:
+	// 		c.capabilities = make([]string, 0)
+	// 		c.capabilities = append(c.capabilities, fields[1:]...)
+	// 	}
+	// }
 
 	return nil
 }
@@ -290,18 +291,6 @@ func (c *Client) Login(username, password string) error {
 		switch status {
 		case StatusResponseNO:
 			return fmt.Errorf("error logging in: %s", resp.Fields[2])
-		}
-
-		if resp.Fields[2][0] == respCodeStart {
-			fields := strings.Split(strings.Trim(resp.Fields[2], "[]"), " ")
-
-			code := StatusResponseCode(fields[0])
-
-			switch code {
-			case StatusResponseCodeCapability:
-				c.capabilities = make([]string, 0)
-				c.capabilities = append(c.capabilities, fields[1:]...)
-			}
 		}
 
 		return nil

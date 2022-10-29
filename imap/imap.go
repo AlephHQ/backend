@@ -45,5 +45,10 @@ const (
 	DataResponseCodeFlags  DataResponseCode = "FLAGS"
 	DataResponseCodeExists DataResponseCode = "EXISTS"
 	DataResponseCodeRecent DataResponseCode = "RECENT"
-	DataResponseCodeFetch  DataResponseCode = "FETCH"
+)
+
+type MessageResponseCode string
+
+const (
+	MessageResponseCodeFetch MessageResponseCode = "FETCH"
 )

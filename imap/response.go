@@ -153,8 +153,10 @@ func Parse(raw string) *Response {
 		// this would be
 		atom, err = readAtom(reader)
 		if err == ErrFoundSpecialChar {
-			// log.Println(atom)
-			resp.AddField(atom)
+			if atom != "" {
+				log.Println("Atom: ", atom)
+				resp.AddField(atom)
+			}
 
 			sp, err = readSpecialChar(reader)
 			if err != nil {
@@ -172,6 +174,7 @@ func Parse(raw string) *Response {
 					// code, then read and store arguments, which
 					// will be handled later by the appropriate
 					// handler
+					// resp.AddField(string(respCodeStart))
 					code, err := readAtom(reader)
 					if err == ErrFoundSpecialChar {
 						resp.AddField(code)
@@ -180,7 +183,7 @@ func Parse(raw string) *Response {
 						// is a space
 						sp, _ = readSpecialChar(reader)
 						if sp != space {
-							log.Panic("expected a space, found " + string(sp))
+							log.Panic("expected a space, found " + "\"" + string(sp) + "\"")
 						}
 
 						args, err := readRespStatusCodeArgs(reader)
@@ -189,7 +192,7 @@ func Parse(raw string) *Response {
 
 							sp, _ = readSpecialChar(reader)
 							if sp != respCodeEnd {
-								log.Panic("expected \"]\", found " + string(sp))
+								log.Panic("expected \"]\", found " + "\"" + string(sp) + "\"")
 							}
 						}
 					}

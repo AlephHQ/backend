@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"strconv"
 	"strings"
 	"sync"
 )
@@ -39,7 +38,6 @@ func (c *Client) waitForAndHandleGreeting() error {
 	}
 
 	resp := Parse(greeting)
-	log.Println(resp)
 	status := StatusResponse(resp.Fields[1])
 	switch status {
 	case StatusResponseOK:
@@ -50,17 +48,16 @@ func (c *Client) waitForAndHandleGreeting() error {
 		return ErrStatusNotOK
 	}
 
-	// if resp.Fields[2][0] == respCodeStart {
-	// 	fields := strings.Split(strings.Trim(resp.Fields[2], "[]"), " ")
+	if resp.Fields[2] == string(respCodeStart) {
+		code := StatusResponseCode(resp.Fields[3])
+		fields := strings.Split(resp.Fields[4], " ")
 
-	// 	code := StatusResponseCode(fields[0])
-
-	// 	switch code {
-	// 	case StatusResponseCodeCapability:
-	// 		c.capabilities = make([]string, 0)
-	// 		c.capabilities = append(c.capabilities, fields[1:]...)
-	// 	}
-	// }
+		switch code {
+		case StatusResponseCodeCapability:
+			c.capabilities = make([]string, 0)
+			c.capabilities = append(c.capabilities, fields[1:]...)
+		}
+	}
 
 	return nil
 }
@@ -99,85 +96,71 @@ func (c *Client) handleUnsolicitedResp(resp *Response) {
 		log.Println(resp.Raw)
 		return
 	case StatusResponseOK:
-		if resp.Fields[2][0] == respCodeStart {
-			fields := strings.Trim(resp.Fields[2], "[]")
+		if resp.Fields[2] == string(respCodeStart) {
+			// fields := strings.Split(resp.Fields[4], " ")
 
-			code := ""
-			reader := strings.NewReader(fields)
-			for {
-				r, _, err := reader.ReadRune()
-				if r == space || err == io.EOF {
-					break
-				}
-
-				if err != nil {
-					log.Panic(err)
-				}
-
-				code += string(r)
-			}
-
+			code := resp.Fields[3]
 			switch StatusResponseCode(code) {
 			case StatusResponseCodePermanentFlags:
-				permflags := make([]string, 0)
-				curflag := ""
-				for {
-					r, _, err := reader.ReadRune()
-					if err != nil {
-						log.Panic(err)
-					}
+				// permflags := make([]string, 0)
+				// curflag := ""
+				// for {
+				// 	r, _, err := reader.ReadRune()
+				// 	if err != nil {
+				// 		log.Panic(err)
+				// 	}
 
-					if r == listEnd || r == space {
-						permflags = append(permflags, curflag)
-						curflag = ""
+				// 	if r == listEnd || r == space {
+				// 		permflags = append(permflags, curflag)
+				// 		curflag = ""
 
-						if r != space {
-							break
-						}
-					} else {
-						curflag += string(r)
-					}
+				// 		if r != space {
+				// 			break
+				// 		}
+				// 	} else {
+				// 		curflag += string(r)
+				// 	}
 
-					if r == listStart {
-						continue
-					}
-				}
+				// 	if r == listStart {
+				// 		continue
+				// 	}
+				// }
 
-				if c.mbox != nil {
-					c.mbox.SetPermanentFlags(permflags)
-				}
+				// if c.mbox != nil {
+				// 	c.mbox.SetPermanentFlags(permflags)
+				// }
 
 				return
 			case StatusResponseCodeUnseen, StatusResponseCodeUIDNext, StatusResponseCodeUIDValidity:
-				numstr := ""
-				for {
-					r, _, err := reader.ReadRune()
-					if err == io.EOF {
-						break
-					}
+				// numstr := ""
+				// for {
+				// 	r, _, err := reader.ReadRune()
+				// 	if err == io.EOF {
+				// 		break
+				// 	}
 
-					if err != nil {
-						log.Panic(err)
-					}
+				// 	if err != nil {
+				// 		log.Panic(err)
+				// 	}
 
-					numstr += string(r)
-				}
+				// 	numstr += string(r)
+				// }
 
-				num, err := strconv.ParseUint(numstr, 10, 64)
-				if err != nil {
-					log.Panic(err)
-				}
+				// num, err := strconv.ParseUint(numstr, 10, 64)
+				// if err != nil {
+				// 	log.Panic(err)
+				// }
 
-				if c.mbox != nil {
-					switch StatusResponseCode(code) {
-					case StatusResponseCodeUnseen:
-						c.mbox.SetUnseen(num)
-					case StatusResponseCodeUIDNext:
-						c.mbox.SetUIDNext(num)
-					case StatusResponseCodeUIDValidity:
-						c.mbox.SetUIDValidity(num)
-					}
-				}
+				// if c.mbox != nil {
+				// 	switch StatusResponseCode(code) {
+				// 	case StatusResponseCodeUnseen:
+				// 		c.mbox.SetUnseen(num)
+				// 	case StatusResponseCodeUIDNext:
+				// 		c.mbox.SetUIDNext(num)
+				// 	case StatusResponseCodeUIDValidity:
+				// 		c.mbox.SetUIDValidity(num)
+				// 	}
+				// }
 
 				return
 			}
@@ -187,53 +170,52 @@ func (c *Client) handleUnsolicitedResp(resp *Response) {
 	}
 
 	// at this point, we have a data response
-	code := DataResponseCode(resp.Fields[1])
-	switch code {
-	case DataResponseCodeFlags:
-		flags := strings.Split(strings.Trim(resp.Fields[2], "()"), " ")
-		if c.mbox != nil {
-			c.mbox.SetFlags(flags)
-		}
+	// code := DataResponseCode(resp.Fields[1])
+	// switch code {
+	// case DataResponseCodeFlags:
+	// 	flags := strings.Split(strings.Trim(resp.Fields[2], "()"), " ")
+	// 	if c.mbox != nil {
+	// 		c.mbox.SetFlags(flags)
+	// 	}
 
-		return
-	}
+	// 	return
+	// }
 
-	code = DataResponseCode(resp.Fields[2])
-	switch code {
-	case DataResponseCodeExists, DataResponseCodeRecent:
-		num, err := strconv.ParseUint(resp.Fields[1], 10, 64)
-		if err != nil {
-			log.Panic(err)
-		}
+	// code = DataResponseCode(resp.Fields[2])
+	// switch code {
+	// case DataResponseCodeExists, DataResponseCodeRecent:
+	// 	num, err := strconv.ParseUint(resp.Fields[1], 10, 64)
+	// 	if err != nil {
+	// 		log.Panic(err)
+	// 	}
 
-		if c.mbox != nil {
-			switch code {
-			case DataResponseCodeExists:
-				c.mbox.SetExists(num)
-				return
-			case DataResponseCodeRecent:
-				c.mbox.SetRecent(num)
-				return
-			}
-		}
-	default:
-		log.Println(code)
-	}
+	// 	if c.mbox != nil {
+	// 		switch code {
+	// 		case DataResponseCodeExists:
+	// 			c.mbox.SetExists(num)
+	// 			return
+	// 		case DataResponseCodeRecent:
+	// 			c.mbox.SetRecent(num)
+	// 			return
+	// 		}
+	// 	}
+	// default:
+	// 	log.Println(code)
+	// }
 }
 
 func (c *Client) readOne() (string, error) {
 	respRaw := ""
 	for {
 		r, _, err := c.conn.ReadRune()
-		if err == io.EOF || r == lf {
-			break
-		}
-
 		if err != nil {
 			return "", err
 		}
 
 		respRaw += string(r)
+		if r == lf {
+			break
+		}
 	}
 
 	return respRaw, nil
@@ -248,7 +230,7 @@ func (c *Client) setState(state ConnectionState) {
 func (c *Client) read() {
 	for {
 		respRaw, err := c.readOne()
-		if err != nil {
+		if err != nil && err != io.EOF {
 			log.Panic(err)
 		}
 
@@ -291,6 +273,17 @@ func (c *Client) Login(username, password string) error {
 		switch status {
 		case StatusResponseNO:
 			return fmt.Errorf("error logging in: %s", resp.Fields[2])
+		case StatusResponseOK:
+			if resp.Fields[2] == string(respCodeStart) {
+				code := StatusResponseCode(resp.Fields[3])
+				fields := strings.Split(resp.Fields[4], " ")
+
+				switch code {
+				case StatusResponseCodeCapability:
+					c.capabilities = make([]string, 0)
+					c.capabilities = append(c.capabilities, fields[1:]...)
+				}
+			}
 		}
 
 		return nil
@@ -347,19 +340,20 @@ func (c *Client) Logout() error {
 
 func (c *Client) Select(name string) error {
 	handler := func(resp *Response) error {
+		log.Println(resp)
 		status := StatusResponse(resp.Fields[1])
 		switch status {
 		case StatusResponseOK:
 			c.setState(SelectedState)
 
 			// set read and write permissions
-			permissions := StatusResponseCode(strings.Trim(resp.Fields[2], "[]"))
+			permissions := StatusResponseCode(resp.Fields[3])
 			if c.mbox != nil {
 				c.mbox.SetReadOnly(permissions == StatusResponseCodeReadOnly)
 			}
 
 		case StatusResponseNO:
-			log.Println(resp.Fields[2])
+			log.Println(resp.Fields[3])
 		}
 
 		return nil

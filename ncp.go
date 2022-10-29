@@ -17,10 +17,10 @@ func main() {
 		log.Panic(err)
 	}
 
-	// err = c.Select("inbox")
-	// if err != nil {
-	// 	log.Panic(err)
-	// }
+	err = c.Select("inbox")
+	if err != nil {
+		log.Panic(err)
+	}
 
 	// err = c.Fetch()
 	// if err != nil {

@@ -67,7 +67,6 @@ func (resp *Response) AddField(field string) {
 // error indicating it found a special character
 func readAtom(reader *bufio.Reader) (string, error) {
 	atom := ""
-
 	for {
 		r, _, err := reader.ReadRune()
 		if err != nil {
@@ -154,7 +153,6 @@ func Parse(raw string) *Response {
 		atom, err = readAtom(reader)
 		if err == ErrFoundSpecialChar {
 			if atom != "" {
-				log.Println("Atom: ", atom)
 				resp.AddField(atom)
 			}
 
@@ -169,31 +167,33 @@ func Parse(raw string) *Response {
 					log.Println("list start")
 					// this is a list, read till end of list
 				case respCodeStart:
-					log.Println("status response code start")
 					// this a status response code, read and store
 					// code, then read and store arguments, which
 					// will be handled later by the appropriate
 					// handler
-					// resp.AddField(string(respCodeStart))
+					resp.AddField(string(respCodeStart))
 					code, err := readAtom(reader)
 					if err == ErrFoundSpecialChar {
 						resp.AddField(code)
 
 						// read special character and make sure it
-						// is a space
+						// is a space or "]"
 						sp, _ = readSpecialChar(reader)
-						if sp != space {
-							log.Panic("expected a space, found " + "\"" + string(sp) + "\"")
+						if sp == space {
+							args, err := readRespStatusCodeArgs(reader)
+							if err == ErrFoundSpecialChar {
+								resp.AddField(args)
+
+								sp, _ = readSpecialChar(reader)
+								if sp != respCodeEnd {
+									log.Panic("expected \"]\", found " + "\"" + string(sp) + "\"")
+								}
+								resp.AddField(string(sp))
+							}
 						}
 
-						args, err := readRespStatusCodeArgs(reader)
-						if err == ErrFoundSpecialChar {
-							resp.AddField(args)
-
-							sp, _ = readSpecialChar(reader)
-							if sp != respCodeEnd {
-								log.Panic("expected \"]\", found " + "\"" + string(sp) + "\"")
-							}
+						if sp == respCodeEnd {
+							resp.AddField(string(sp))
 						}
 					}
 				case cr:

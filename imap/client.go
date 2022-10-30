@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -86,6 +87,7 @@ func (c *Client) registerHandler(tag string, f HandlerFunc) {
 }
 
 func (c *Client) handleUnsolicitedResp(resp *Response) {
+	log.Println(resp.Raw)
 	if resp.Fields[0] == string(plus) {
 		return
 	}
@@ -97,70 +99,30 @@ func (c *Client) handleUnsolicitedResp(resp *Response) {
 		return
 	case StatusResponseOK:
 		if resp.Fields[2] == string(respCodeStart) {
-			// fields := strings.Split(resp.Fields[4], " ")
-
 			code := resp.Fields[3]
 			switch StatusResponseCode(code) {
 			case StatusResponseCodePermanentFlags:
-				// permflags := make([]string, 0)
-				// curflag := ""
-				// for {
-				// 	r, _, err := reader.ReadRune()
-				// 	if err != nil {
-				// 		log.Panic(err)
-				// 	}
-
-				// 	if r == listEnd || r == space {
-				// 		permflags = append(permflags, curflag)
-				// 		curflag = ""
-
-				// 		if r != space {
-				// 			break
-				// 		}
-				// 	} else {
-				// 		curflag += string(r)
-				// 	}
-
-				// 	if r == listStart {
-				// 		continue
-				// 	}
-				// }
-
-				// if c.mbox != nil {
-				// 	c.mbox.SetPermanentFlags(permflags)
-				// }
+				if c.mbox != nil {
+					c.mbox.SetPermanentFlags(strings.Split(strings.Trim(resp.Fields[4], "()"), " "))
+				}
 
 				return
 			case StatusResponseCodeUnseen, StatusResponseCodeUIDNext, StatusResponseCodeUIDValidity:
-				// numstr := ""
-				// for {
-				// 	r, _, err := reader.ReadRune()
-				// 	if err == io.EOF {
-				// 		break
-				// 	}
+				num, err := strconv.ParseUint(resp.Fields[4], 10, 64)
+				if err != nil {
+					log.Panic(err)
+				}
 
-				// 	if err != nil {
-				// 		log.Panic(err)
-				// 	}
-
-				// 	numstr += string(r)
-				// }
-
-				// num, err := strconv.ParseUint(numstr, 10, 64)
-				// if err != nil {
-				// 	log.Panic(err)
-				// }
-
-				// if c.mbox != nil {
-				// 	switch StatusResponseCode(code) {
-				// 	case StatusResponseCodeUnseen:
-				// 		c.mbox.SetUnseen(num)
-				// 	case StatusResponseCodeUIDNext:
-				// 		c.mbox.SetUIDNext(num)
-				// 	case StatusResponseCodeUIDValidity:
-				// 		c.mbox.SetUIDValidity(num)
-				// 	}
-				// }
+				if c.mbox != nil {
+					switch StatusResponseCode(code) {
+					case StatusResponseCodeUnseen:
+						c.mbox.SetUnseen(num)
+					case StatusResponseCodeUIDNext:
+						c.mbox.SetUIDNext(num)
+					case StatusResponseCodeUIDValidity:
+						c.mbox.SetUIDValidity(num)
+					}
+				}
 
 				return
 			}
@@ -170,38 +132,38 @@ func (c *Client) handleUnsolicitedResp(resp *Response) {
 	}
 
 	// at this point, we have a data response
-	// code := DataResponseCode(resp.Fields[1])
-	// switch code {
-	// case DataResponseCodeFlags:
-	// 	flags := strings.Split(strings.Trim(resp.Fields[2], "()"), " ")
-	// 	if c.mbox != nil {
-	// 		c.mbox.SetFlags(flags)
-	// 	}
+	code := DataResponseCode(resp.Fields[1])
+	switch code {
+	case DataResponseCodeFlags:
+		flags := strings.Split(resp.Fields[3], " ")
+		if c.mbox != nil {
+			c.mbox.SetFlags(flags)
+		}
 
-	// 	return
-	// }
+		return
+	}
 
-	// code = DataResponseCode(resp.Fields[2])
-	// switch code {
-	// case DataResponseCodeExists, DataResponseCodeRecent:
-	// 	num, err := strconv.ParseUint(resp.Fields[1], 10, 64)
-	// 	if err != nil {
-	// 		log.Panic(err)
-	// 	}
+	code = DataResponseCode(resp.Fields[2])
+	switch code {
+	case DataResponseCodeExists, DataResponseCodeRecent:
+		num, err := strconv.ParseUint(resp.Fields[1], 10, 64)
+		if err != nil {
+			log.Panic(err)
+		}
 
-	// 	if c.mbox != nil {
-	// 		switch code {
-	// 		case DataResponseCodeExists:
-	// 			c.mbox.SetExists(num)
-	// 			return
-	// 		case DataResponseCodeRecent:
-	// 			c.mbox.SetRecent(num)
-	// 			return
-	// 		}
-	// 	}
-	// default:
-	// 	log.Println(code)
-	// }
+		if c.mbox != nil {
+			switch code {
+			case DataResponseCodeExists:
+				c.mbox.SetExists(num)
+				return
+			case DataResponseCodeRecent:
+				c.mbox.SetRecent(num)
+				return
+			}
+		}
+	default:
+		log.Println(code)
+	}
 }
 
 func (c *Client) readOne() (string, error) {
@@ -340,7 +302,6 @@ func (c *Client) Logout() error {
 
 func (c *Client) Select(name string) error {
 	handler := func(resp *Response) error {
-		log.Println(resp)
 		status := StatusResponse(resp.Fields[1])
 		switch status {
 		case StatusResponseOK:

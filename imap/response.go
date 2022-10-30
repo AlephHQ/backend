@@ -119,6 +119,33 @@ func readRespStatusCodeArgs(reader *bufio.Reader) (string, error) {
 	}
 }
 
+// readList will read till end of list
+func readList(reader *bufio.Reader) (string, error) {
+	list := ""
+	nonClosedOpens := 0
+	for {
+		r, _, err := reader.ReadRune()
+		if err != nil {
+			log.Panic(err)
+		}
+
+		if r == listStart {
+			nonClosedOpens++
+		}
+
+		if r == listEnd {
+			if nonClosedOpens == 0 {
+				reader.UnreadRune()
+				return list, nil
+			}
+
+			nonClosedOpens--
+		}
+
+		list += string(r)
+	}
+}
+
 func Parse(raw string) *Response {
 	resp := NewResponse(raw)
 	reader := bufio.NewReader(strings.NewReader(resp.Raw))
@@ -164,8 +191,19 @@ func Parse(raw string) *Response {
 			if sp != space {
 				switch sp {
 				case listStart:
-					log.Println("list start")
 					// this is a list, read till end of list
+					resp.AddField(string(listStart))
+					list, err := readList(reader)
+					if err != nil {
+						log.Panic(err)
+					}
+
+					resp.AddField(list)
+					sp, err = readSpecialChar(reader)
+					if err != nil {
+						log.Panic(err)
+					}
+					resp.AddField(string(sp))
 				case respCodeStart:
 					// this a status response code, read and store
 					// code, then read and store arguments, which

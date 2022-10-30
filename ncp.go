@@ -21,6 +21,7 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
+	log.Println(c.Mailbox())
 
 	// err = c.Fetch()
 	// if err != nil {

@@ -22,6 +22,8 @@ type Client struct {
 	slock sync.Mutex
 
 	mbox *MailboxStatus
+
+	updates chan string
 }
 
 var ErrNotSelectedState = errors.New("not in selected state")
@@ -216,7 +218,8 @@ func (c *Client) read() {
 
 func New(conn *Conn) (*Client, error) {
 	handlers := make(map[string]HandlerFunc)
-	client := &Client{conn: conn, handlers: handlers}
+	updates := make(chan string)
+	client := &Client{conn: conn, handlers: handlers, updates: updates}
 
 	err := client.waitForAndHandleGreeting()
 	if err != nil {

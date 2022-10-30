@@ -89,7 +89,7 @@ func (c *Client) registerHandler(tag string, f HandlerFunc) {
 }
 
 func (c *Client) handleUnsolicitedResp(resp *Response) {
-	log.Println(resp.Raw)
+	// log.Println(resp.Raw)
 	if resp.Fields[0] == string(plus) {
 		return
 	}
@@ -169,7 +169,10 @@ func (c *Client) handleUnsolicitedResp(resp *Response) {
 	case MessageStatusResponseCodeFetch:
 		// 1. read message uid
 		// 2. read and parse message envelope
-		log.Printf(`"%v"`, resp.Fields[4])
+		// log.Println(resp.Raw)
+		if c.updates != nil {
+			c.updates <- resp.Raw
+		}
 	}
 }
 
@@ -337,6 +340,9 @@ func (c *Client) Mailbox() *MailboxStatus {
 }
 
 func (c *Client) Fetch() error {
+	c.updates = make(chan string, 15)
+	defer close(c.updates)
+
 	handler := func(resp *Response) error {
 		status := StatusResponse(resp.Fields[1])
 		switch status {
@@ -349,5 +355,15 @@ func (c *Client) Fetch() error {
 		return nil
 	}
 
-	return c.execute("fetch 1:15 all", handler)
+	err := c.execute("fetch 1:15 all", handler)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	for i := 0; i < 15; i++ {
+		msg := <-c.updates
+		log.Println(msg)
+	}
+
+	return nil
 }

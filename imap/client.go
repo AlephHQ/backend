@@ -335,7 +335,7 @@ func (c *Client) Fetch() error {
 		case StatusResponseNO:
 			return fmt.Errorf("error fetching: %s", resp.Fields[2])
 		case StatusResponseOK:
-			log.Println(resp.Raw)
+			log.Println(resp)
 		}
 
 		return nil

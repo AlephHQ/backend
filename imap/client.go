@@ -126,8 +126,6 @@ func (c *Client) handleUnsolicitedResp(resp *Response) {
 
 				return
 			}
-		} else {
-			log.Println(resp.Fields[2])
 		}
 	}
 
@@ -161,8 +159,15 @@ func (c *Client) handleUnsolicitedResp(resp *Response) {
 				return
 			}
 		}
-	default:
-		log.Println(code)
+	}
+
+	// message status response
+	msgStatusRespCode := MessageStatusResponseCode(resp.Fields[2])
+	switch msgStatusRespCode {
+	case MessageStatusResponseCodeFetch:
+		// 1. read message uid
+		// 2. read and parse message envelope
+		log.Printf(`"%v"`, resp.Fields[4])
 	}
 }
 

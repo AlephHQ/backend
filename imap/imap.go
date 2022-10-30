@@ -47,8 +47,8 @@ const (
 	DataResponseCodeRecent DataResponseCode = "RECENT"
 )
 
-type MessageResponseCode string
+type MessageStatusResponseCode string
 
 const (
-	MessageResponseCodeFetch MessageResponseCode = "FETCH"
+	MessageStatusResponseCodeFetch MessageStatusResponseCode = "FETCH"
 )

@@ -340,8 +340,8 @@ func (c *Client) Mailbox() *MailboxStatus {
 }
 
 func (c *Client) Fetch() error {
-	c.updates = make(chan string, 15)
-	defer close(c.updates)
+	c.updates = make(chan string)
+	done := make(chan bool)
 
 	handler := func(resp *Response) error {
 		status := StatusResponse(resp.Fields[1])
@@ -355,15 +355,24 @@ func (c *Client) Fetch() error {
 		return nil
 	}
 
+	go func() {
+		for {
+			update, more := <-c.updates
+			if !more {
+				break
+			}
+
+			log.Println(update)
+		}
+
+		done <- true
+	}()
+
 	err := c.execute("fetch 1:15 all", handler)
 	if err != nil {
 		log.Panic(err)
 	}
 
-	for i := 0; i < 15; i++ {
-		msg := <-c.updates
-		log.Println(msg)
-	}
-
+	<-done
 	return nil
 }

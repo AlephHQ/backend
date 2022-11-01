@@ -5,3 +5,11 @@ type ResponseHandler interface {
 }
 
 type HandlerFunc func(resp *Response) error
+
+type FetchHandler struct {
+	Messages chan string
+}
+
+func (fh *FetchHandler) Handle(resp *Response) error {
+	return nil
+}

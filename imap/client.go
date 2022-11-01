@@ -23,7 +23,8 @@ type Client struct {
 
 	mbox *MailboxStatus
 
-	updates chan string
+	updates  chan string
+	messages chan string
 }
 
 var ErrNotSelectedState = errors.New("not in selected state")
@@ -170,8 +171,8 @@ func (c *Client) handleUnsolicitedResp(resp *Response) {
 		// 1. read message uid
 		// 2. read and parse message envelope
 		// log.Println(resp.Raw)
-		if c.updates != nil {
-			c.updates <- resp.Raw
+		if c.messages != nil {
+			c.messages <- resp.Raw
 		}
 	}
 }
@@ -340,7 +341,7 @@ func (c *Client) Mailbox() *MailboxStatus {
 }
 
 func (c *Client) Fetch() error {
-	c.updates = make(chan string)
+	c.messages = make(chan string)
 	done := make(chan bool)
 
 	handler := func(resp *Response) error {
@@ -349,7 +350,7 @@ func (c *Client) Fetch() error {
 		case StatusResponseNO:
 			return fmt.Errorf("error fetching: %s", resp.Fields[2])
 		case StatusResponseOK:
-			close(c.updates)
+			close(c.messages)
 			log.Println(resp)
 		}
 
@@ -358,7 +359,7 @@ func (c *Client) Fetch() error {
 
 	go func() {
 		for {
-			msg, more := <-c.updates
+			msg, more := <-c.messages
 			if !more {
 				log.Println("* NO MORE MESSAGES")
 				done <- true

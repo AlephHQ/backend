@@ -349,6 +349,7 @@ func (c *Client) Fetch() error {
 		case StatusResponseNO:
 			return fmt.Errorf("error fetching: %s", resp.Fields[2])
 		case StatusResponseOK:
+			close(c.updates)
 			log.Println(resp)
 		}
 
@@ -357,15 +358,15 @@ func (c *Client) Fetch() error {
 
 	go func() {
 		for {
-			update, more := <-c.updates
+			msg, more := <-c.updates
 			if !more {
+				log.Println("* NO MORE MESSAGES")
+				done <- true
 				break
 			}
 
-			log.Println(update)
+			log.Println(msg)
 		}
-
-		done <- true
 	}()
 
 	err := c.execute("fetch 1:15 all", handler)

@@ -1,39 +1,13 @@
-package imap
+package response
 
 import (
 	"bufio"
-	"errors"
 	"io"
 	"log"
 	"strings"
+
+	"ncp/backend/imap"
 )
-
-const (
-	space         = ' '
-	star          = '*'
-	cr            = '\r'
-	lf            = '\n'
-	doubleQuote   = '"'
-	respCodeStart = '['
-	respCodeEnd   = ']'
-	plus          = '+'
-	listStart     = '('
-	listEnd       = ')'
-)
-
-type ResponseType string
-
-const (
-	ResponseTypeStatusResp              ResponseType = "status"
-	ResponseTypeServerMailBoxStatusResp ResponseType = "server mailbox status"
-	ResponseTypeMessageStatus           ResponseType = "message status"
-	ResponseTypeCommandContinuationReq  ResponseType = "continuation request"
-)
-
-var ErrNotStatusRespCode = errors.New("not a status response code")
-var ErrStatusNotOK = errors.New("status not ok")
-var ErrFoundSpecialChar = errors.New("found a special char")
-var ErrNotSpecialChar = errors.New("found a non-special char")
 
 type Response struct {
 	// Raw contains the original response in its raw format
@@ -42,9 +16,6 @@ type Response struct {
 	// Fields contains all the different fields received
 	// in the response
 	Fields []string
-
-	// Type indicates what type of response we're dealing with.
-	Type ResponseType
 
 	// Tagged indicates whether this is a tagged response
 	Tagged bool
@@ -73,13 +44,12 @@ func readAtom(reader *bufio.Reader) (string, error) {
 			return "", err
 		}
 
-		switch r {
-		case space, star, cr, lf, doubleQuote, plus, respCodeStart, respCodeEnd, listStart, listEnd:
+		if imap.IsSpecialChar(r) {
 			reader.UnreadRune()
-			return atom, ErrFoundSpecialChar
-		default:
-			atom += string(r)
+			return atom, imap.ErrFoundSpecialChar
 		}
+
+		atom += string(r)
 	}
 }
 
@@ -90,13 +60,12 @@ func readSpecialChar(reader *bufio.Reader) (rune, error) {
 		return 0, err
 	}
 
-	switch r {
-	case space, star, cr, lf, doubleQuote, plus, respCodeStart, respCodeEnd, listStart, listEnd:
+	if imap.IsSpecialChar(r) {
 		return r, nil
-	default:
-		reader.UnreadRune()
-		return 0, ErrNotSpecialChar
 	}
+
+	reader.UnreadRune()
+	return 0, imap.ErrNotSpecialChar
 }
 
 // readRespStatusCodeArgs reads a status response code's
@@ -110,9 +79,9 @@ func readRespStatusCodeArgs(reader *bufio.Reader) (string, error) {
 			return "", err
 		}
 
-		if r == respCodeEnd {
+		if r == rune(imap.SpecialCharacterRespCodeEnd) {
 			reader.UnreadRune()
-			return args, ErrFoundSpecialChar
+			return args, imap.ErrFoundSpecialChar
 		}
 
 		args += string(r)
@@ -129,11 +98,11 @@ func readList(reader *bufio.Reader) (string, error) {
 			log.Panic(err)
 		}
 
-		if r == listStart {
+		if r == rune(imap.SpecialCharacterListStart) {
 			nonClosedOpens++
 		}
 
-		if r == listEnd {
+		if r == rune(imap.SpecialCharacterListEnd) {
 			if nonClosedOpens == 0 {
 				reader.UnreadRune()
 				return list, nil
@@ -158,14 +127,11 @@ func Parse(raw string) *Response {
 	// it's the star special char (*)
 	if sp, err := readSpecialChar(reader); err == nil {
 		switch sp {
-		case star, plus:
+		case rune(imap.SpecialCharacterStar), rune(imap.SpecialCharacterPlus):
 			resp.AddField(string(sp))
-			// resp.Type is already false, so no need to set this
-			if sp == plus {
-				resp.Type = ResponseTypeCommandContinuationReq
-			}
+			// resp.Tagged is already false, so no need to set this
 		}
-	} else if err == ErrNotSpecialChar {
+	} else if err == imap.ErrNotSpecialChar {
 		resp.Tagged = true
 	} else {
 		log.Panic(err)
@@ -178,7 +144,7 @@ func Parse(raw string) *Response {
 		// this will read the next atom in the response. If the response is tagged,
 		// this would be
 		atom, err = readAtom(reader)
-		if err == ErrFoundSpecialChar {
+		if err == imap.ErrFoundSpecialChar {
 			if atom != "" {
 				resp.AddField(atom)
 			}
@@ -188,11 +154,11 @@ func Parse(raw string) *Response {
 				log.Panic(err)
 			}
 
-			if sp != space {
+			if sp != rune(imap.SpecialCharacterSpace) {
 				switch sp {
-				case listStart:
+				case rune(imap.SpecialCharacterListStart):
 					// this is a list, read till end of list
-					resp.AddField(string(listStart))
+					resp.AddField(string(imap.SpecialCharacterListStart))
 					list, err := readList(reader)
 					if err != nil {
 						log.Panic(err)
@@ -204,37 +170,37 @@ func Parse(raw string) *Response {
 						log.Panic(err)
 					}
 					resp.AddField(string(sp))
-				case respCodeStart:
+				case rune(imap.SpecialCharacterRespCodeStart):
 					// this a status response code, read and store
 					// code, then read and store arguments, which
 					// will be handled later by the appropriate
 					// handler
-					resp.AddField(string(respCodeStart))
+					resp.AddField(string(imap.SpecialCharacterRespCodeStart))
 					code, err := readAtom(reader)
-					if err == ErrFoundSpecialChar {
+					if err == imap.ErrFoundSpecialChar {
 						resp.AddField(code)
 
 						// read special character and make sure it
 						// is a space or "]"
 						sp, _ = readSpecialChar(reader)
-						if sp == space {
+						if sp == rune(imap.SpecialCharacterSpace) {
 							args, err := readRespStatusCodeArgs(reader)
-							if err == ErrFoundSpecialChar {
+							if err == imap.ErrFoundSpecialChar {
 								resp.AddField(args)
 
 								sp, _ = readSpecialChar(reader)
-								if sp != respCodeEnd {
+								if sp != rune(imap.SpecialCharacterRespCodeEnd) {
 									log.Panic("expected \"]\", found " + "\"" + string(sp) + "\"")
 								}
 								resp.AddField(string(sp))
 							}
 						}
 
-						if sp == respCodeEnd {
+						if sp == rune(imap.SpecialCharacterRespCodeEnd) {
 							resp.AddField(string(sp))
 						}
 					}
-				case cr:
+				case rune(imap.SpecialCharacterCR):
 					sp, err = readSpecialChar(reader)
 					if err == io.EOF {
 						break
@@ -244,7 +210,7 @@ func Parse(raw string) *Response {
 						log.Panic(err)
 					}
 
-					if sp != lf {
+					if sp != rune(imap.SpecialCharacterLF) {
 						log.Panic("expected \"\\n\", found " + string(sp))
 					}
 				}

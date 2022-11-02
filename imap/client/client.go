@@ -1,4 +1,4 @@
-package imap
+package client
 
 import (
 	"errors"
@@ -8,20 +8,24 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"ncp/backend/imap"
+	"ncp/backend/imap/conn"
+	"ncp/backend/imap/response"
 )
 
 type Client struct {
-	conn *Conn
+	conn *conn.Conn
 
 	hlock    sync.Mutex
-	handlers map[string]HandlerFunc
+	handlers map[string]response.HandlerFunc
 
 	capabilities []string
 
-	state ConnectionState
+	state imap.ConnectionState
 	slock sync.Mutex
 
-	mbox *MailboxStatus
+	mbox *imap.MailboxStatus
 
 	updates  chan string
 	messages chan string
@@ -41,23 +45,23 @@ func (c *Client) waitForAndHandleGreeting() error {
 		}
 	}
 
-	resp := Parse(greeting)
-	status := StatusResponse(resp.Fields[1])
+	resp := response.Parse(greeting)
+	status := imap.StatusResponse(resp.Fields[1])
 	switch status {
-	case StatusResponseOK:
-		c.setState(NotAuthenticatedState)
-	case StatusResponsePREAUTH:
-		c.setState(AuthenticatedState)
-	case StatusResponseBAD, StatusResponseBYE, StatusResponseNO:
-		return ErrStatusNotOK
+	case imap.StatusResponseOK:
+		c.setState(imap.NotAuthenticatedState)
+	case imap.StatusResponsePREAUTH:
+		c.setState(imap.AuthenticatedState)
+	case imap.StatusResponseBAD, imap.StatusResponseBYE, imap.StatusResponseNO:
+		return imap.ErrStatusNotOK
 	}
 
-	if resp.Fields[2] == string(respCodeStart) {
-		code := StatusResponseCode(resp.Fields[3])
+	if resp.Fields[2] == string(imap.SpecialCharacterRespCodeStart) {
+		code := imap.StatusResponseCode(resp.Fields[3])
 		fields := strings.Split(resp.Fields[4], " ")
 
 		switch code {
-		case StatusResponseCodeCapability:
+		case imap.StatusResponseCodeCapability:
 			c.capabilities = make([]string, 0)
 			c.capabilities = append(c.capabilities, fields[1:]...)
 		}
@@ -66,10 +70,10 @@ func (c *Client) waitForAndHandleGreeting() error {
 	return nil
 }
 
-func (c *Client) execute(cmd string, handler HandlerFunc) error {
+func (c *Client) execute(cmd string, handler response.HandlerFunc) error {
 	tag := getTag()
 	done := make(chan error)
-	c.registerHandler(tag, func(resp *Response) error {
+	c.registerHandler(tag, func(resp *response.Response) error {
 		err := handler(resp)
 		done <- err
 		return err
@@ -83,46 +87,46 @@ func (c *Client) execute(cmd string, handler HandlerFunc) error {
 	return <-done
 }
 
-func (c *Client) registerHandler(tag string, f HandlerFunc) {
+func (c *Client) registerHandler(tag string, f response.HandlerFunc) {
 	c.hlock.Lock()
 	c.handlers[tag] = f
 	c.hlock.Unlock()
 }
 
-func (c *Client) handleUnsolicitedResp(resp *Response) {
+func (c *Client) handleUnsolicitedResp(resp *response.Response) {
 	// log.Println(resp.Raw)
-	if resp.Fields[0] == string(plus) {
+	if resp.Fields[0] == string(imap.SpecialCharacterPlus) {
 		return
 	}
 
-	status := StatusResponse(resp.Fields[1])
+	status := imap.StatusResponse(resp.Fields[1])
 	switch status {
-	case StatusResponseBAD, StatusResponseBYE, StatusResponseNO:
+	case imap.StatusResponseBAD, imap.StatusResponseBYE, imap.StatusResponseNO:
 		log.Println(resp.Raw)
 		return
-	case StatusResponseOK:
-		if resp.Fields[2] == string(respCodeStart) {
+	case imap.StatusResponseOK:
+		if resp.Fields[2] == string(imap.SpecialCharacterRespCodeStart) {
 			code := resp.Fields[3]
-			switch StatusResponseCode(code) {
-			case StatusResponseCodePermanentFlags:
+			switch imap.StatusResponseCode(code) {
+			case imap.StatusResponseCodePermanentFlags:
 				if c.mbox != nil {
 					c.mbox.SetPermanentFlags(strings.Split(strings.Trim(resp.Fields[4], "()"), " "))
 				}
 
 				return
-			case StatusResponseCodeUnseen, StatusResponseCodeUIDNext, StatusResponseCodeUIDValidity:
+			case imap.StatusResponseCodeUnseen, imap.StatusResponseCodeUIDNext, imap.StatusResponseCodeUIDValidity:
 				num, err := strconv.ParseUint(resp.Fields[4], 10, 64)
 				if err != nil {
 					log.Panic(err)
 				}
 
 				if c.mbox != nil {
-					switch StatusResponseCode(code) {
-					case StatusResponseCodeUnseen:
+					switch imap.StatusResponseCode(code) {
+					case imap.StatusResponseCodeUnseen:
 						c.mbox.SetUnseen(num)
-					case StatusResponseCodeUIDNext:
+					case imap.StatusResponseCodeUIDNext:
 						c.mbox.SetUIDNext(num)
-					case StatusResponseCodeUIDValidity:
+					case imap.StatusResponseCodeUIDValidity:
 						c.mbox.SetUIDValidity(num)
 					}
 				}
@@ -133,9 +137,9 @@ func (c *Client) handleUnsolicitedResp(resp *Response) {
 	}
 
 	// at this point, we have a data response
-	code := DataResponseCode(resp.Fields[1])
+	code := imap.DataResponseCode(resp.Fields[1])
 	switch code {
-	case DataResponseCodeFlags:
+	case imap.DataResponseCodeFlags:
 		flags := strings.Split(resp.Fields[3], " ")
 		if c.mbox != nil {
 			c.mbox.SetFlags(flags)
@@ -144,9 +148,9 @@ func (c *Client) handleUnsolicitedResp(resp *Response) {
 		return
 	}
 
-	code = DataResponseCode(resp.Fields[2])
+	code = imap.DataResponseCode(resp.Fields[2])
 	switch code {
-	case DataResponseCodeExists, DataResponseCodeRecent:
+	case imap.DataResponseCodeExists, imap.DataResponseCodeRecent:
 		num, err := strconv.ParseUint(resp.Fields[1], 10, 64)
 		if err != nil {
 			log.Panic(err)
@@ -154,10 +158,10 @@ func (c *Client) handleUnsolicitedResp(resp *Response) {
 
 		if c.mbox != nil {
 			switch code {
-			case DataResponseCodeExists:
+			case imap.DataResponseCodeExists:
 				c.mbox.SetExists(num)
 				return
-			case DataResponseCodeRecent:
+			case imap.DataResponseCodeRecent:
 				c.mbox.SetRecent(num)
 				return
 			}
@@ -165,9 +169,9 @@ func (c *Client) handleUnsolicitedResp(resp *Response) {
 	}
 
 	// message status response
-	msgStatusRespCode := MessageStatusResponseCode(resp.Fields[2])
+	msgStatusRespCode := imap.MessageStatusResponseCode(resp.Fields[2])
 	switch msgStatusRespCode {
-	case MessageStatusResponseCodeFetch:
+	case imap.MessageStatusResponseCodeFetch:
 		// 1. read message uid
 		// 2. read and parse message envelope
 		// log.Println(resp.Raw)
@@ -186,7 +190,7 @@ func (c *Client) readOne() (string, error) {
 		}
 
 		respRaw += string(r)
-		if r == lf {
+		if r == rune(imap.SpecialCharacterLF) {
 			break
 		}
 	}
@@ -194,7 +198,7 @@ func (c *Client) readOne() (string, error) {
 	return respRaw, nil
 }
 
-func (c *Client) setState(state ConnectionState) {
+func (c *Client) setState(state imap.ConnectionState) {
 	c.slock.Lock()
 	c.state = state
 	c.slock.Unlock()
@@ -208,10 +212,10 @@ func (c *Client) read() {
 		}
 
 		if respRaw != "" {
-			resp := Parse(respRaw)
+			resp := response.Parse(respRaw)
 			if handler := c.handlers[resp.Fields[0]]; handler != nil {
 				handler(resp)
-			} else if resp.Fields[0] == string(star) {
+			} else if resp.Fields[0] == string(imap.SpecialCharacterStar) {
 				c.handleUnsolicitedResp(resp)
 			}
 		}
@@ -220,12 +224,45 @@ func (c *Client) read() {
 
 // BEGIN EXPORTED
 
-func New(conn *Conn) (*Client, error) {
-	handlers := make(map[string]HandlerFunc)
+func Dial(network, addr string) (*Client, error) {
+	handlers := make(map[string]response.HandlerFunc)
 	updates := make(chan string)
-	client := &Client{conn: conn, handlers: handlers, updates: updates}
+	conn, err := conn.New(network, addr, false)
+	if err != nil {
+		return nil, err
+	}
 
-	err := client.waitForAndHandleGreeting()
+	client := &Client{
+		conn:     conn,
+		handlers: handlers,
+		updates:  updates,
+	}
+
+	err = client.waitForAndHandleGreeting()
+	if err != nil {
+		return nil, err
+	}
+
+	go client.read()
+
+	return client, nil
+}
+
+func DialWithTLS(network, addr string) (*Client, error) {
+	handlers := make(map[string]response.HandlerFunc)
+	updates := make(chan string)
+	conn, err := conn.New(network, addr, true)
+	if err != nil {
+		return nil, err
+	}
+
+	client := &Client{
+		conn:     conn,
+		handlers: handlers,
+		updates:  updates,
+	}
+
+	err = client.waitForAndHandleGreeting()
 	if err != nil {
 		return nil, err
 	}
@@ -240,20 +277,20 @@ func (c *Client) Capabilities() []string {
 }
 
 func (c *Client) Login(username, password string) error {
-	handler := func(resp *Response) error {
+	handler := func(resp *response.Response) error {
 		log.Println(resp.Raw)
 
-		status := StatusResponse(resp.Fields[1])
+		status := imap.StatusResponse(resp.Fields[1])
 		switch status {
-		case StatusResponseNO:
+		case imap.StatusResponseNO:
 			return fmt.Errorf("error logging in: %s", resp.Fields[2])
-		case StatusResponseOK:
-			if resp.Fields[2] == string(respCodeStart) {
-				code := StatusResponseCode(resp.Fields[3])
+		case imap.StatusResponseOK:
+			if resp.Fields[2] == string(imap.SpecialCharacterRespCodeStart) {
+				code := imap.StatusResponseCode(resp.Fields[3])
 				fields := strings.Split(resp.Fields[4], " ")
 
 				switch code {
-				case StatusResponseCodeCapability:
+				case imap.StatusResponseCodeCapability:
 					c.capabilities = make([]string, 0)
 					c.capabilities = append(c.capabilities, fields[1:]...)
 				}
@@ -267,15 +304,15 @@ func (c *Client) Login(username, password string) error {
 }
 
 func (c *Client) Close() error {
-	if c.state != SelectedState {
+	if c.state != imap.SelectedState {
 		return ErrNotSelectedState
 	}
 
-	handler := func(resp *Response) error {
-		status := StatusResponse(resp.Fields[1])
+	handler := func(resp *response.Response) error {
+		status := imap.StatusResponse(resp.Fields[1])
 		switch status {
-		case StatusResponseOK:
-			c.setState(AuthenticatedState)
+		case imap.StatusResponseOK:
+			c.setState(imap.AuthenticatedState)
 			c.mbox = nil
 		}
 
@@ -286,17 +323,17 @@ func (c *Client) Close() error {
 }
 
 func (c *Client) Logout() error {
-	if c.state == SelectedState {
+	if c.state == imap.SelectedState {
 		err := c.Close()
 		if err != nil {
 			return err
 		}
 	}
 
-	handler := func(resp *Response) error {
+	handler := func(resp *response.Response) error {
 		log.Println(resp.Raw)
 
-		c.setState(LogoutState)
+		c.setState(imap.LogoutState)
 		c.mbox = nil
 
 		return nil
@@ -313,30 +350,30 @@ func (c *Client) Logout() error {
 }
 
 func (c *Client) Select(name string) error {
-	handler := func(resp *Response) error {
-		status := StatusResponse(resp.Fields[1])
+	handler := func(resp *response.Response) error {
+		status := imap.StatusResponse(resp.Fields[1])
 		switch status {
-		case StatusResponseOK:
-			c.setState(SelectedState)
+		case imap.StatusResponseOK:
+			c.setState(imap.SelectedState)
 
 			// set read and write permissions
-			permissions := StatusResponseCode(resp.Fields[3])
+			permissions := imap.StatusResponseCode(resp.Fields[3])
 			if c.mbox != nil {
-				c.mbox.SetReadOnly(permissions == StatusResponseCodeReadOnly)
+				c.mbox.SetReadOnly(permissions == imap.StatusResponseCodeReadOnly)
 			}
 
-		case StatusResponseNO:
+		case imap.StatusResponseNO:
 			log.Println(resp.Fields[3])
 		}
 
 		return nil
 	}
 
-	c.mbox = NewMailboxStatus().SetName(name)
+	c.mbox = imap.NewMailboxStatus().SetName(name)
 	return c.execute(fmt.Sprintf("select %s", name), handler)
 }
 
-func (c *Client) Mailbox() *MailboxStatus {
+func (c *Client) Mailbox() *imap.MailboxStatus {
 	return c.mbox
 }
 
@@ -344,12 +381,12 @@ func (c *Client) Fetch() error {
 	c.messages = make(chan string)
 	done := make(chan bool)
 
-	handler := func(resp *Response) error {
-		status := StatusResponse(resp.Fields[1])
+	handler := func(resp *response.Response) error {
+		status := imap.StatusResponse(resp.Fields[1])
 		switch status {
-		case StatusResponseNO:
+		case imap.StatusResponseNO:
 			return fmt.Errorf("error fetching: %s", resp.Fields[2])
-		case StatusResponseOK:
+		case imap.StatusResponseOK:
 			close(c.messages)
 			log.Println(resp)
 		}

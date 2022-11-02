@@ -1,5 +1,7 @@
 package imap
 
+import "errors"
+
 // RFC3501 Section 3
 type ConnectionState int
 
@@ -52,3 +54,8 @@ type MessageStatusResponseCode string
 const (
 	MessageStatusResponseCodeFetch MessageStatusResponseCode = "FETCH"
 )
+
+var ErrNotStatusRespCode = errors.New("not a status response code")
+var ErrStatusNotOK = errors.New("status not ok")
+var ErrFoundSpecialChar = errors.New("found a special char")
+var ErrNotSpecialChar = errors.New("found a non-special char")

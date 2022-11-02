@@ -1,4 +1,4 @@
-package imap
+package response
 
 type ResponseHandler interface {
 	Handle(resp *Response) error

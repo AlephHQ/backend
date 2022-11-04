@@ -11,7 +11,6 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
-	defer c.Logout()
 
 	err = c.Login("mo@modsoussi.com", "alohomora")
 	if err != nil {
@@ -24,7 +23,12 @@ func main() {
 	}
 	log.Println(c.Mailbox())
 
-	err = c.Fetch()
+	// err = c.Fetch()
+	// if err != nil {
+	// 	log.Panic(err)
+	// }
+
+	err = c.Logout()
 	if err != nil {
 		log.Panic(err)
 	}

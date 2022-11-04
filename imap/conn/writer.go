@@ -19,7 +19,7 @@ func NewWriter(w io.Writer) *Writer {
 	return wr
 }
 
-func (w *Writer) WriteString(cmd string) error {
+func (w *Writer) WriteCommand(cmd string) error {
 	log.Println(cmd)
 	_, err := w.Writer.WriteString(cmd + crlf)
 	if err != nil {

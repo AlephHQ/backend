@@ -27,8 +27,7 @@ type Client struct {
 
 	mbox *imap.MailboxStatus
 
-	updates  chan string
-	messages chan string
+	updates chan string
 }
 
 var ErrNotSelectedState = errors.New("not in selected state")
@@ -81,7 +80,7 @@ func (c *Client) execute(cmd string, handler response.Handler) error {
 
 	c.registerHandler(tag, handlerFunc)
 
-	err := c.conn.Writer.WriteString(tag + " " + cmd)
+	err := c.conn.Writer.WriteCommand(tag + " " + cmd)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -96,7 +95,6 @@ func (c *Client) registerHandler(tag string, h response.Handler) {
 }
 
 func (c *Client) handleUnsolicitedResp(resp *response.Response) {
-	// log.Println(resp.Raw)
 	if resp.Fields[0] == string(imap.SpecialCharacterPlus) {
 		return
 	}
@@ -169,18 +167,6 @@ func (c *Client) handleUnsolicitedResp(resp *response.Response) {
 			}
 		}
 	}
-
-	// message status response
-	msgStatusRespCode := imap.MessageStatusResponseCode(resp.Fields[2])
-	switch msgStatusRespCode {
-	case imap.MessageStatusResponseCodeFetch:
-		// 1. read message uid
-		// 2. read and parse message envelope
-		// log.Println(resp.Raw)
-		if c.messages != nil {
-			c.messages <- resp.Raw
-		}
-	}
 }
 
 func (c *Client) readOne() (string, error) {
@@ -208,29 +194,31 @@ func (c *Client) setState(state imap.ConnectionState) {
 
 func (c *Client) handle(resp *response.Response) error {
 	c.hlock.Lock()
-	numHandlers := len(c.handlers) - 1
-	for i := numHandlers; i >= 0; i-- {
-		if ok, err := c.handlers[i].Handle(resp); ok && err == nil {
+	defer c.hlock.Unlock()
+
+	lastHandlerIndex := len(c.handlers) - 1
+	for i := lastHandlerIndex; i >= 0; i-- {
+		unregister, err := c.handlers[i].Handle(resp)
+		if unregister {
 			c.handlers = append(c.handlers[:i], c.handlers[i+1:]...)
-		} else if err != imap.ErrUnhanled {
+
 			return err
 		}
 	}
-	c.hlock.Unlock()
 
-	return imap.ErrUnhanled
+	return imap.ErrUnhandled
 }
 
 func (c *Client) read() {
 	for {
 		respRaw, err := c.readOne()
 		if err != nil && err != io.EOF {
-			log.Panic(err)
+			log.Println(err)
 		}
 
 		if respRaw != "" {
 			resp := response.Parse(respRaw)
-			if err := c.handle(resp); err == imap.ErrUnhanled {
+			if err := c.handle(resp); err == imap.ErrUnhandled {
 				c.handleUnsolicitedResp(resp)
 			}
 		}
@@ -293,12 +281,10 @@ func (c *Client) Capabilities() []string {
 
 func (c *Client) Login(username, password string) error {
 	handler := func(resp *response.Response) (bool, error) {
-		log.Println(resp.Raw)
-
 		status := imap.StatusResponse(resp.Fields[1])
 		switch status {
 		case imap.StatusResponseNO:
-			return false, fmt.Errorf("error logging in: %s", resp.Fields[2])
+			return true, fmt.Errorf("error logging in: %s", resp.Fields[2])
 		case imap.StatusResponseOK:
 			if resp.Fields[2] == string(imap.SpecialCharacterRespCodeStart) {
 				code := imap.StatusResponseCode(resp.Fields[3])
@@ -309,10 +295,12 @@ func (c *Client) Login(username, password string) error {
 					c.capabilities = make([]string, 0)
 					c.capabilities = append(c.capabilities, fields[1:]...)
 				}
+
+				return true, nil
 			}
 		}
 
-		return true, nil
+		return false, imap.ErrUnhandled
 	}
 
 	return c.execute(fmt.Sprintf("login %s %s", username, password), response.NewHandlerFunc(handler))
@@ -329,9 +317,11 @@ func (c *Client) Close() error {
 		case imap.StatusResponseOK:
 			c.setState(imap.AuthenticatedState)
 			c.mbox = nil
+
+			return true, nil
 		}
 
-		return true, nil
+		return false, imap.ErrUnhandled
 	}
 
 	return c.execute("close", response.NewHandlerFunc(handler))
@@ -346,8 +336,6 @@ func (c *Client) Logout() error {
 	}
 
 	handler := func(resp *response.Response) (bool, error) {
-		log.Println(resp.Raw)
-
 		c.setState(imap.LogoutState)
 		c.mbox = nil
 
@@ -372,16 +360,23 @@ func (c *Client) Select(name string) error {
 			c.setState(imap.SelectedState)
 
 			// set read and write permissions
-			permissions := imap.StatusResponseCode(resp.Fields[3])
-			if c.mbox != nil {
-				c.mbox.SetReadOnly(permissions == imap.StatusResponseCodeReadOnly)
+			statusRespCode := imap.StatusResponseCode(resp.Fields[3])
+			switch statusRespCode {
+			case imap.StatusResponseCodeReadOnly, imap.StatusResponseCodeReadWrite:
+				if c.mbox != nil {
+					c.mbox.SetReadOnly(statusRespCode == imap.StatusResponseCodeReadOnly)
+				}
+
+				return true, nil
 			}
 
+			return false, imap.ErrUnhandled
 		case imap.StatusResponseNO:
 			log.Println(resp.Fields[3])
+			return true, fmt.Errorf("error selecting: %s", resp.Fields[3])
 		}
 
-		return true, nil
+		return false, imap.ErrUnhandled
 	}
 
 	c.mbox = imap.NewMailboxStatus().SetName(name)

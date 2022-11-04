@@ -18,14 +18,14 @@ func (f *Fetch) Handle(resp *Response) (bool, error) {
 		f.Done <- true
 		return true, nil
 	case imap.StatusResponseNO:
-		return false, fmt.Errorf("error Fetching: %s", resp.Fields[2])
+		return true, fmt.Errorf("error Fetching: %s", resp.Fields[2])
 	}
 
 	msgStatusRespCode := imap.MessageStatusResponseCode(resp.Fields[2])
 	if msgStatusRespCode == imap.MessageStatusResponseCodeFetch {
 		f.Messages <- resp.Raw
-		return true, nil
+		return false, nil
 	}
 
-	return false, imap.ErrUnhanled
+	return false, imap.ErrUnhandled
 }

@@ -18,7 +18,7 @@ type Client struct {
 	conn *conn.Conn
 
 	hlock    sync.Mutex
-	handlers map[string]response.Handler
+	handlers []response.Handler
 
 	capabilities []string
 
@@ -70,13 +70,13 @@ func (c *Client) waitForAndHandleGreeting() error {
 	return nil
 }
 
-func (c *Client) execute(cmd string, handler response.HandlerFunc) error {
+func (c *Client) execute(cmd string, handler response.Handler) error {
 	tag := getTag()
 	done := make(chan error)
-	handlerFunc := response.NewHandlerFunc(func(resp *response.Response) error {
-		err := handler.Handle(resp)
+	handlerFunc := response.NewHandlerFunc(func(resp *response.Response) (bool, error) {
+		ok, err := handler.Handle(resp)
 		done <- err
-		return err
+		return ok, err
 	})
 
 	c.registerHandler(tag, handlerFunc)
@@ -91,7 +91,7 @@ func (c *Client) execute(cmd string, handler response.HandlerFunc) error {
 
 func (c *Client) registerHandler(tag string, h response.Handler) {
 	c.hlock.Lock()
-	c.handlers[tag] = h
+	c.handlers = append(c.handlers, h)
 	c.hlock.Unlock()
 }
 
@@ -206,6 +206,21 @@ func (c *Client) setState(state imap.ConnectionState) {
 	c.slock.Unlock()
 }
 
+func (c *Client) handle(resp *response.Response) error {
+	c.hlock.Lock()
+	numHandlers := len(c.handlers) - 1
+	for i := numHandlers; i >= 0; i-- {
+		if ok, err := c.handlers[i].Handle(resp); ok && err == nil {
+			c.handlers = append(c.handlers[:i], c.handlers[i+1:]...)
+		} else if err != imap.ErrUnhanled {
+			return err
+		}
+	}
+	c.hlock.Unlock()
+
+	return imap.ErrUnhanled
+}
+
 func (c *Client) read() {
 	for {
 		respRaw, err := c.readOne()
@@ -215,9 +230,7 @@ func (c *Client) read() {
 
 		if respRaw != "" {
 			resp := response.Parse(respRaw)
-			if handler := c.handlers[resp.Fields[0]]; handler != nil {
-				handler.Handle(resp)
-			} else if resp.Fields[0] == string(imap.SpecialCharacterStar) {
+			if err := c.handle(resp); err == imap.ErrUnhanled {
 				c.handleUnsolicitedResp(resp)
 			}
 		}
@@ -227,7 +240,7 @@ func (c *Client) read() {
 // BEGIN EXPORTED
 
 func Dial(network, addr string) (*Client, error) {
-	handlers := make(map[string]response.Handler)
+	handlers := make([]response.Handler, 0)
 	updates := make(chan string)
 	conn, err := conn.New(network, addr, false)
 	if err != nil {
@@ -251,7 +264,7 @@ func Dial(network, addr string) (*Client, error) {
 }
 
 func DialWithTLS(network, addr string) (*Client, error) {
-	handlers := make(map[string]response.Handler)
+	handlers := make([]response.Handler, 0)
 	updates := make(chan string)
 	conn, err := conn.New(network, addr, true)
 	if err != nil {
@@ -279,13 +292,13 @@ func (c *Client) Capabilities() []string {
 }
 
 func (c *Client) Login(username, password string) error {
-	handler := func(resp *response.Response) error {
+	handler := func(resp *response.Response) (bool, error) {
 		log.Println(resp.Raw)
 
 		status := imap.StatusResponse(resp.Fields[1])
 		switch status {
 		case imap.StatusResponseNO:
-			return fmt.Errorf("error logging in: %s", resp.Fields[2])
+			return false, fmt.Errorf("error logging in: %s", resp.Fields[2])
 		case imap.StatusResponseOK:
 			if resp.Fields[2] == string(imap.SpecialCharacterRespCodeStart) {
 				code := imap.StatusResponseCode(resp.Fields[3])
@@ -299,10 +312,10 @@ func (c *Client) Login(username, password string) error {
 			}
 		}
 
-		return nil
+		return true, nil
 	}
 
-	return c.execute(fmt.Sprintf("login %s %s", username, password), handler)
+	return c.execute(fmt.Sprintf("login %s %s", username, password), response.NewHandlerFunc(handler))
 }
 
 func (c *Client) Close() error {
@@ -310,7 +323,7 @@ func (c *Client) Close() error {
 		return ErrNotSelectedState
 	}
 
-	handler := func(resp *response.Response) error {
+	handler := func(resp *response.Response) (bool, error) {
 		status := imap.StatusResponse(resp.Fields[1])
 		switch status {
 		case imap.StatusResponseOK:
@@ -318,10 +331,10 @@ func (c *Client) Close() error {
 			c.mbox = nil
 		}
 
-		return nil
+		return true, nil
 	}
 
-	return c.execute("close", handler)
+	return c.execute("close", response.NewHandlerFunc(handler))
 }
 
 func (c *Client) Logout() error {
@@ -332,16 +345,16 @@ func (c *Client) Logout() error {
 		}
 	}
 
-	handler := func(resp *response.Response) error {
+	handler := func(resp *response.Response) (bool, error) {
 		log.Println(resp.Raw)
 
 		c.setState(imap.LogoutState)
 		c.mbox = nil
 
-		return nil
+		return true, nil
 	}
 
-	err := c.execute("logout", handler)
+	err := c.execute("logout", response.NewHandlerFunc(handler))
 	if err != nil {
 		return err
 	}
@@ -352,7 +365,7 @@ func (c *Client) Logout() error {
 }
 
 func (c *Client) Select(name string) error {
-	handler := func(resp *response.Response) error {
+	handler := func(resp *response.Response) (bool, error) {
 		status := imap.StatusResponse(resp.Fields[1])
 		switch status {
 		case imap.StatusResponseOK:
@@ -368,11 +381,11 @@ func (c *Client) Select(name string) error {
 			log.Println(resp.Fields[3])
 		}
 
-		return nil
+		return true, nil
 	}
 
 	c.mbox = imap.NewMailboxStatus().SetName(name)
-	return c.execute(fmt.Sprintf("select %s", name), handler)
+	return c.execute(fmt.Sprintf("select %s", name), response.NewHandlerFunc(handler))
 }
 
 func (c *Client) Mailbox() *imap.MailboxStatus {
@@ -380,28 +393,16 @@ func (c *Client) Mailbox() *imap.MailboxStatus {
 }
 
 func (c *Client) Fetch() error {
-	c.messages = make(chan string)
-	done := make(chan bool)
-
-	handler := func(resp *response.Response) error {
-		status := imap.StatusResponse(resp.Fields[1])
-		switch status {
-		case imap.StatusResponseNO:
-			return fmt.Errorf("error fetching: %s", resp.Fields[2])
-		case imap.StatusResponseOK:
-			close(c.messages)
-			log.Println(resp)
-		}
-
-		return nil
+	handler := &response.Fetch{
+		Messages: make(chan string),
+		Done:     make(chan bool),
 	}
 
 	go func() {
 		for {
-			msg, more := <-c.messages
+			msg, more := <-handler.Messages
 			if !more {
 				log.Println("* NO MORE MESSAGES")
-				done <- true
 				break
 			}
 
@@ -414,6 +415,6 @@ func (c *Client) Fetch() error {
 		log.Panic(err)
 	}
 
-	<-done
+	<-handler.Done
 	return nil
 }

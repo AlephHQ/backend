@@ -1,15 +1,15 @@
 package response
 
 type Handler interface {
-	Handle(resp *Response) error
+	Handle(resp *Response) (bool, error)
 }
 
-type HandlerFunc func(resp *Response) error
+type HandlerFunc func(resp *Response) (bool, error)
 
-func NewHandlerFunc(f func(resp *Response) error) HandlerFunc {
+func NewHandlerFunc(f func(resp *Response) (bool, error)) HandlerFunc {
 	return HandlerFunc(f)
 }
 
-func (f HandlerFunc) Handle(resp *Response) error {
+func (f HandlerFunc) Handle(resp *Response) (bool, error) {
 	return f(resp)
 }

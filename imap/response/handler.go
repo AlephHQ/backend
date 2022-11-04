@@ -1,15 +1,15 @@
 package response
 
-type ResponseHandler interface {
+type Handler interface {
 	Handle(resp *Response) error
 }
 
 type HandlerFunc func(resp *Response) error
 
-type FetchHandler struct {
-	Messages chan string
+func NewHandlerFunc(f func(resp *Response) error) HandlerFunc {
+	return HandlerFunc(f)
 }
 
-func (fh *FetchHandler) Handle(resp *Response) error {
-	return nil
+func (f HandlerFunc) Handle(resp *Response) error {
+	return f(resp)
 }

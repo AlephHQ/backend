@@ -18,7 +18,7 @@ type Client struct {
 	conn *conn.Conn
 
 	hlock    sync.Mutex
-	handlers map[string]response.HandlerFunc
+	handlers map[string]response.Handler
 
 	capabilities []string
 
@@ -73,11 +73,13 @@ func (c *Client) waitForAndHandleGreeting() error {
 func (c *Client) execute(cmd string, handler response.HandlerFunc) error {
 	tag := getTag()
 	done := make(chan error)
-	c.registerHandler(tag, func(resp *response.Response) error {
-		err := handler(resp)
+	handlerFunc := response.NewHandlerFunc(func(resp *response.Response) error {
+		err := handler.Handle(resp)
 		done <- err
 		return err
 	})
+
+	c.registerHandler(tag, handlerFunc)
 
 	err := c.conn.Writer.WriteString(tag + " " + cmd)
 	if err != nil {
@@ -87,9 +89,9 @@ func (c *Client) execute(cmd string, handler response.HandlerFunc) error {
 	return <-done
 }
 
-func (c *Client) registerHandler(tag string, f response.HandlerFunc) {
+func (c *Client) registerHandler(tag string, h response.Handler) {
 	c.hlock.Lock()
-	c.handlers[tag] = f
+	c.handlers[tag] = h
 	c.hlock.Unlock()
 }
 
@@ -214,7 +216,7 @@ func (c *Client) read() {
 		if respRaw != "" {
 			resp := response.Parse(respRaw)
 			if handler := c.handlers[resp.Fields[0]]; handler != nil {
-				handler(resp)
+				handler.Handle(resp)
 			} else if resp.Fields[0] == string(imap.SpecialCharacterStar) {
 				c.handleUnsolicitedResp(resp)
 			}
@@ -225,7 +227,7 @@ func (c *Client) read() {
 // BEGIN EXPORTED
 
 func Dial(network, addr string) (*Client, error) {
-	handlers := make(map[string]response.HandlerFunc)
+	handlers := make(map[string]response.Handler)
 	updates := make(chan string)
 	conn, err := conn.New(network, addr, false)
 	if err != nil {
@@ -249,7 +251,7 @@ func Dial(network, addr string) (*Client, error) {
 }
 
 func DialWithTLS(network, addr string) (*Client, error) {
-	handlers := make(map[string]response.HandlerFunc)
+	handlers := make(map[string]response.Handler)
 	updates := make(chan string)
 	conn, err := conn.New(network, addr, true)
 	if err != nil {

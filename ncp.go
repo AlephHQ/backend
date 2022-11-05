@@ -13,7 +13,7 @@ func main() {
 	}
 	defer c.Logout()
 
-	err = c.Login("mo@modsoussi.com", "alohomora")
+	err = c.Login("mo@modsoussi.com", "alohomor")
 	if err != nil {
 		log.Panic(err)
 	}

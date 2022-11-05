@@ -30,6 +30,11 @@ type Client struct {
 	updates chan string
 }
 
+type Handled struct {
+	Unregister bool
+	Err        error
+}
+
 var ErrNotSelectedState = errors.New("not in selected state")
 
 // BEGIN UNEXPORTED
@@ -57,7 +62,7 @@ func (c *Client) waitForAndHandleGreeting() error {
 
 	if resp.Fields[2] == string(imap.SpecialCharacterRespCodeStart) {
 		code := imap.StatusResponseCode(resp.Fields[3])
-		fields := strings.Split(resp.Fields[4], " ")
+		fields := strings.Split(resp.Fields[5], " ")
 
 		switch code {
 		case imap.StatusResponseCodeCapability:
@@ -71,10 +76,11 @@ func (c *Client) waitForAndHandleGreeting() error {
 
 func (c *Client) execute(cmd string, handler response.Handler) error {
 	tag := getTag()
-	done := make(chan bool)
+	done := make(chan Handled)
 	handlerFunc := response.NewHandlerFunc(func(resp *response.Response) (bool, error) {
 		unregister, err := handler.Handle(resp)
-		done <- unregister && err == nil
+		log.Println(unregister, err)
+		done <- Handled{Unregister: unregister, Err: err}
 		return unregister, err
 	})
 
@@ -88,8 +94,8 @@ func (c *Client) execute(cmd string, handler response.Handler) error {
 	for {
 		select {
 		case d := <-done:
-			if d {
-				return nil
+			if d.Unregister && d.Err != imap.ErrUnhandled {
+				return err
 			}
 		}
 	}
@@ -291,7 +297,7 @@ func (c *Client) Login(username, password string) error {
 		status := imap.StatusResponse(resp.Fields[1])
 		switch status {
 		case imap.StatusResponseNO:
-			return true, fmt.Errorf("error logging in: %s", resp.Fields[2])
+			return true, errors.New(strings.Join(resp.Fields[5:], " "))
 		case imap.StatusResponseOK:
 			if resp.Fields[2] == string(imap.SpecialCharacterRespCodeStart) {
 				code := imap.StatusResponseCode(resp.Fields[3])

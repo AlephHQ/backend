@@ -6,8 +6,17 @@ import (
 )
 
 type Fetch struct {
+	Tag      string
 	Messages chan string
 	Done     chan bool
+}
+
+func NewHandlerFetch(tag string) *Fetch {
+	return &Fetch{
+		Tag:      tag,
+		Messages: make(chan string),
+		Done:     make(chan bool),
+	}
 }
 
 func (f *Fetch) Handle(resp *Response) (bool, error) {

@@ -2,7 +2,6 @@ package client
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"strconv"
@@ -10,6 +9,7 @@ import (
 	"sync"
 
 	"ncp/backend/imap"
+	"ncp/backend/imap/command"
 	"ncp/backend/imap/conn"
 	"ncp/backend/imap/response"
 )
@@ -85,7 +85,7 @@ func (c *Client) execute(cmd string, handler response.Handler) error {
 
 	c.registerHandler(tag, handlerFunc)
 
-	err := c.conn.Writer.WriteCommand(tag + " " + cmd)
+	err := c.conn.Writer.WriteCommand(cmd)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -292,30 +292,10 @@ func (c *Client) Capabilities() []string {
 }
 
 func (c *Client) Login(username, password string) error {
-	handler := func(resp *response.Response) (bool, error) {
-		status := imap.StatusResponse(resp.Fields[1])
-		switch status {
-		case imap.StatusResponseNO:
-			return true, errors.New(strings.Join(resp.Fields[5:], " "))
-		case imap.StatusResponseOK:
-			if resp.Fields[2] == string(imap.SpecialCharacterRespCodeStart) {
-				code := imap.StatusResponseCode(resp.Fields[3])
-				fields := strings.Split(resp.Fields[4], " ")
+	cmd := command.NewCmdLogin(username, password)
+	handler := response.NewHandlerLogin(cmd.Tag)
 
-				switch code {
-				case imap.StatusResponseCodeCapability:
-					c.capabilities = make([]string, 0)
-					c.capabilities = append(c.capabilities, fields[1:]...)
-				}
-
-				return true, nil
-			}
-		}
-
-		return false, imap.ErrUnhandled
-	}
-
-	return c.execute(fmt.Sprintf("login %s %s", username, password), response.NewHandlerFunc(handler))
+	return c.execute(cmd.Command(), handler)
 }
 
 func (c *Client) Close() error {
@@ -323,20 +303,10 @@ func (c *Client) Close() error {
 		return ErrNotSelectedState
 	}
 
-	handler := func(resp *response.Response) (bool, error) {
-		status := imap.StatusResponse(resp.Fields[1])
-		switch status {
-		case imap.StatusResponseOK:
-			c.setState(imap.AuthenticatedState)
-			c.mbox = nil
+	cmd := command.NewCmdClose()
+	handler := response.NewHandlerClose(cmd.Tag)
 
-			return true, nil
-		}
-
-		return false, imap.ErrUnhandled
-	}
-
-	return c.execute("close", response.NewHandlerFunc(handler))
+	return c.execute(cmd.Command(), handler)
 }
 
 func (c *Client) Logout() error {
@@ -347,14 +317,10 @@ func (c *Client) Logout() error {
 		}
 	}
 
-	handler := func(resp *response.Response) (bool, error) {
-		c.setState(imap.LogoutState)
-		c.mbox = nil
+	cmd := command.NewCmdLogout()
+	handler := response.NewHandlerLogout(cmd.Tag)
 
-		return true, nil
-	}
-
-	err := c.execute("logout", response.NewHandlerFunc(handler))
+	err := c.execute("logout", handler)
 	if err != nil {
 		return err
 	}
@@ -365,33 +331,11 @@ func (c *Client) Logout() error {
 }
 
 func (c *Client) Select(name string) error {
-	handler := func(resp *response.Response) (bool, error) {
-		status := imap.StatusResponse(resp.Fields[1])
-		switch status {
-		case imap.StatusResponseOK:
-			c.setState(imap.SelectedState)
-
-			// set read and write permissions
-			statusRespCode := imap.StatusResponseCode(resp.Fields[3])
-			switch statusRespCode {
-			case imap.StatusResponseCodeReadOnly, imap.StatusResponseCodeReadWrite:
-				if c.mbox != nil {
-					c.mbox.SetReadOnly(statusRespCode == imap.StatusResponseCodeReadOnly)
-				}
-
-				return true, nil
-			}
-
-			return false, imap.ErrUnhandled
-		case imap.StatusResponseNO:
-			return true, errors.New(strings.Join(resp.Fields[2:], " "))
-		}
-
-		return false, imap.ErrUnhandled
-	}
+	cmd := command.NewCmdSelect(name)
+	handler := response.NewHandlerSelect(cmd.Tag)
 
 	c.mbox = imap.NewMailboxStatus().SetName(name)
-	return c.execute(fmt.Sprintf("select %s", name), response.NewHandlerFunc(handler))
+	return c.execute(cmd.Command(), handler)
 }
 
 func (c *Client) Mailbox() *imap.MailboxStatus {
@@ -399,10 +343,8 @@ func (c *Client) Mailbox() *imap.MailboxStatus {
 }
 
 func (c *Client) Fetch() error {
-	handler := &response.Fetch{
-		Messages: make(chan string),
-		Done:     make(chan bool),
-	}
+	cmd := command.NewCmdFetch()
+	handler := response.NewHandlerFetch(cmd.Tag)
 	defer close(handler.Done)
 
 	messages := make([]string, 0)
@@ -418,7 +360,7 @@ func (c *Client) Fetch() error {
 		}
 	}()
 
-	err := c.execute("fetch 1:15 all", handler)
+	err := c.execute(cmd.Command(), handler)
 	if err != nil {
 		log.Panic(err)
 	}

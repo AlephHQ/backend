@@ -15,7 +15,7 @@ func (f *Fetch) Handle(resp *Response) (bool, error) {
 	switch status {
 	case imap.StatusResponseOK:
 		close(f.Messages)
-		go func() { f.Done <- true }()
+		go func() { f.Done <- true }() // go channels are so damn cool
 		return true, nil
 	case imap.StatusResponseNO:
 		return true, fmt.Errorf("error Fetching: %s", resp.Fields[2])

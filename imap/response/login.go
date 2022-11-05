@@ -7,11 +7,15 @@ import (
 )
 
 type Login struct {
-	Tag string
+	Tag          string
+	Capabilities []string
 }
 
 func NewHandlerLogin(tag string) *Login {
-	return &Login{tag}
+	return &Login{
+		Tag:          tag,
+		Capabilities: make([]string, 0),
+	}
 }
 
 func (l *Login) Handle(resp *Response) (bool, error) {
@@ -21,14 +25,14 @@ func (l *Login) Handle(resp *Response) (bool, error) {
 		return true, errors.New(strings.Join(resp.Fields[5:], " "))
 	case imap.StatusResponseOK:
 		if resp.Fields[2] == string(imap.SpecialCharacterRespCodeStart) {
-			// code := imap.StatusResponseCode(resp.Fields[3])
-			// fields := strings.Split(resp.Fields[4], " ")
+			code := imap.StatusResponseCode(resp.Fields[3])
+			fields := strings.Split(resp.Fields[4], " ")
 
-			// switch code {
-			// case imap.StatusResponseCodeCapability:
-			// 	c.capabilities = make([]string, 0)
-			// 	c.capabilities = append(c.capabilities, fields[1:]...)
-			// }
+			switch code {
+			case imap.StatusResponseCodeCapability:
+				l.Capabilities = make([]string, 0)
+				l.Capabilities = append(l.Capabilities, fields[1:]...)
+			}
 
 			return true, nil
 		}

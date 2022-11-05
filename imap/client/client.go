@@ -20,7 +20,7 @@ type Client struct {
 	hlock    sync.Mutex
 	handlers []response.Handler
 
-	capabilities []string
+	capabilities map[string]bool
 
 	state imap.ConnectionState
 	slock sync.Mutex
@@ -66,8 +66,10 @@ func (c *Client) waitForAndHandleGreeting() error {
 
 		switch code {
 		case imap.StatusResponseCodeCapability:
-			c.capabilities = make([]string, 0)
-			c.capabilities = append(c.capabilities, fields[1:]...)
+			c.capabilities = make(map[string]bool)
+			for _, cap := range fields[1:] {
+				c.capabilities[cap] = true
+			}
 		}
 	}
 
@@ -287,15 +289,22 @@ func DialWithTLS(network, addr string) (*Client, error) {
 	return client, nil
 }
 
-func (c *Client) Capabilities() []string {
-	return c.capabilities
+func (c *Client) Capability(cap string) bool {
+	return c.capabilities[cap]
 }
 
 func (c *Client) Login(username, password string) error {
 	cmd := command.NewCmdLogin(username, password)
 	handler := response.NewHandlerLogin(cmd.Tag)
 
-	return c.execute(cmd.Command(), handler)
+	err := c.execute(cmd.Command(), handler)
+	if err == nil && len(handler.Capabilities) > 0 {
+		for _, cap := range handler.Capabilities {
+			c.capabilities[cap] = true
+		}
+	}
+
+	return err
 }
 
 func (c *Client) Close() error {

@@ -399,7 +399,9 @@ func (c *Client) Fetch() error {
 		Messages: make(chan string),
 		Done:     make(chan bool),
 	}
+	defer close(handler.Done)
 
+	messages := make([]string, 0)
 	go func() {
 		for {
 			msg, more := <-handler.Messages
@@ -408,7 +410,7 @@ func (c *Client) Fetch() error {
 				break
 			}
 
-			log.Println(msg)
+			messages = append(messages, msg)
 		}
 	}()
 
@@ -418,5 +420,6 @@ func (c *Client) Fetch() error {
 	}
 
 	<-handler.Done
+	log.Printf("Received %d messages.\n", len(messages))
 	return nil
 }

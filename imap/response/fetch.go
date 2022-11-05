@@ -15,7 +15,7 @@ func (f *Fetch) Handle(resp *Response) (bool, error) {
 	switch status {
 	case imap.StatusResponseOK:
 		close(f.Messages)
-		f.Done <- true
+		go func() { f.Done <- true }()
 		return true, nil
 	case imap.StatusResponseNO:
 		return true, fmt.Errorf("error Fetching: %s", resp.Fields[2])

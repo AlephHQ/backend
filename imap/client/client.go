@@ -71,11 +71,11 @@ func (c *Client) waitForAndHandleGreeting() error {
 
 func (c *Client) execute(cmd string, handler response.Handler) error {
 	tag := getTag()
-	done := make(chan error)
+	done := make(chan bool)
 	handlerFunc := response.NewHandlerFunc(func(resp *response.Response) (bool, error) {
-		ok, err := handler.Handle(resp)
-		done <- err
-		return ok, err
+		unregister, err := handler.Handle(resp)
+		done <- unregister && err == nil
+		return unregister, err
 	})
 
 	c.registerHandler(tag, handlerFunc)
@@ -85,7 +85,14 @@ func (c *Client) execute(cmd string, handler response.Handler) error {
 		log.Panic(err)
 	}
 
-	return <-done
+	for {
+		select {
+		case d := <-done:
+			if d {
+				return nil
+			}
+		}
+	}
 }
 
 func (c *Client) registerHandler(tag string, h response.Handler) {

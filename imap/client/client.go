@@ -79,7 +79,6 @@ func (c *Client) execute(cmd string, handler response.Handler) error {
 	done := make(chan Handled)
 	handlerFunc := response.NewHandlerFunc(func(resp *response.Response) (bool, error) {
 		unregister, err := handler.Handle(resp)
-		log.Println(unregister, err)
 		done <- Handled{Unregister: unregister, Err: err}
 		return unregister, err
 	})
@@ -95,7 +94,7 @@ func (c *Client) execute(cmd string, handler response.Handler) error {
 		select {
 		case d := <-done:
 			if d.Unregister && d.Err != imap.ErrUnhandled {
-				return err
+				return d.Err
 			}
 		}
 	}
@@ -385,8 +384,7 @@ func (c *Client) Select(name string) error {
 
 			return false, imap.ErrUnhandled
 		case imap.StatusResponseNO:
-			log.Println(resp.Fields[3])
-			return true, fmt.Errorf("error selecting: %s", resp.Fields[3])
+			return true, errors.New(strings.Join(resp.Fields[2:], " "))
 		}
 
 		return false, imap.ErrUnhandled

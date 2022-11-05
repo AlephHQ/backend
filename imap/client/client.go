@@ -4,7 +4,6 @@ import (
 	"errors"
 	"io"
 	"log"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -121,64 +120,7 @@ func (c *Client) handleUnsolicitedResp(resp *response.Response) {
 	case imap.StatusResponseOK:
 		if resp.Fields[2] == string(imap.SpecialCharacterRespCodeStart) {
 			code := resp.Fields[3]
-			switch imap.StatusResponseCode(code) {
-			case imap.StatusResponseCodePermanentFlags:
-				if c.mbox != nil {
-					c.mbox.SetPermanentFlags(strings.Split(strings.Trim(resp.Fields[4], "()"), " "))
-				}
-
-				return
-			case imap.StatusResponseCodeUnseen, imap.StatusResponseCodeUIDNext, imap.StatusResponseCodeUIDValidity:
-				num, err := strconv.ParseUint(resp.Fields[4], 10, 64)
-				if err != nil {
-					log.Panic(err)
-				}
-
-				if c.mbox != nil {
-					switch imap.StatusResponseCode(code) {
-					case imap.StatusResponseCodeUnseen:
-						c.mbox.SetUnseen(num)
-					case imap.StatusResponseCodeUIDNext:
-						c.mbox.SetUIDNext(num)
-					case imap.StatusResponseCodeUIDValidity:
-						c.mbox.SetUIDValidity(num)
-					}
-				}
-
-				return
-			}
-		}
-	}
-
-	// at this point, we have a data response
-	code := imap.DataResponseCode(resp.Fields[1])
-	switch code {
-	case imap.DataResponseCodeFlags:
-		flags := strings.Split(resp.Fields[3], " ")
-		if c.mbox != nil {
-			c.mbox.SetFlags(flags)
-		}
-
-		return
-	}
-
-	code = imap.DataResponseCode(resp.Fields[2])
-	switch code {
-	case imap.DataResponseCodeExists, imap.DataResponseCodeRecent:
-		num, err := strconv.ParseUint(resp.Fields[1], 10, 64)
-		if err != nil {
-			log.Panic(err)
-		}
-
-		if c.mbox != nil {
-			switch code {
-			case imap.DataResponseCodeExists:
-				c.mbox.SetExists(num)
-				return
-			case imap.DataResponseCodeRecent:
-				c.mbox.SetRecent(num)
-				return
-			}
+			log.Printf("*** Unsolicited - %s\n", code)
 		}
 	}
 }
@@ -341,10 +283,14 @@ func (c *Client) Logout() error {
 
 func (c *Client) Select(name string) error {
 	cmd := command.NewCmdSelect(name)
-	handler := response.NewHandlerSelect(cmd.Tag)
+	handler := response.NewHandlerSelect(name, cmd.Tag)
 
-	c.mbox = imap.NewMailboxStatus().SetName(name)
-	return c.execute(cmd.Command(), handler)
+	err := c.execute(cmd.Command(), handler)
+	if err == nil {
+		c.mbox = handler.Mailbox
+	}
+
+	return err
 }
 
 func (c *Client) Mailbox() *imap.MailboxStatus {

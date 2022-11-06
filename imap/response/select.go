@@ -11,13 +11,13 @@ import (
 
 type Select struct {
 	Tag     string
-	Mailbox *imap.MailboxStatus
+	Mailbox *imap.Mailbox
 }
 
 func NewHandlerSelect(mbox, tag string) *Select {
 	return &Select{
 		Tag:     tag,
-		Mailbox: imap.NewMailboxStatus().SetName(mbox),
+		Mailbox: imap.NewMailbox().SetName(mbox),
 	}
 }
 

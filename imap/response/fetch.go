@@ -7,14 +7,14 @@ import (
 
 type Fetch struct {
 	Tag      string
-	Messages chan string
+	Messages []string
 	Done     chan bool
 }
 
 func NewHandlerFetch(tag string) *Fetch {
 	return &Fetch{
 		Tag:      tag,
-		Messages: make(chan string),
+		Messages: make([]string, 0),
 		Done:     make(chan bool),
 	}
 }
@@ -23,7 +23,6 @@ func (f *Fetch) Handle(resp *Response) (bool, error) {
 	status := imap.StatusResponse(resp.Fields[1])
 	switch status {
 	case imap.StatusResponseOK:
-		close(f.Messages)
 		go func() { f.Done <- true }() // go channels are so damn cool
 		return true, nil
 	case imap.StatusResponseNO:
@@ -32,7 +31,7 @@ func (f *Fetch) Handle(resp *Response) (bool, error) {
 
 	msgStatusRespCode := imap.MessageStatusResponseCode(resp.Fields[2])
 	if msgStatusRespCode == imap.MessageStatusResponseCodeFetch {
-		f.Messages <- resp.Raw
+		f.Messages = append(f.Messages, resp.Raw)
 		return false, nil
 	}
 

@@ -24,7 +24,7 @@ type Client struct {
 	state imap.ConnectionState
 	slock sync.Mutex
 
-	mbox *imap.MailboxStatus
+	mbox *imap.Mailbox
 
 	updates chan string
 }
@@ -302,7 +302,7 @@ func (c *Client) Select(name string) error {
 	return err
 }
 
-func (c *Client) Mailbox() *imap.MailboxStatus {
+func (c *Client) Mailbox() *imap.Mailbox {
 	return c.mbox
 }
 
@@ -311,25 +311,12 @@ func (c *Client) Fetch() error {
 	handler := response.NewHandlerFetch(cmd.Tag)
 	defer close(handler.Done)
 
-	messages := make([]string, 0)
-	go func() {
-		for {
-			msg, more := <-handler.Messages
-			if !more {
-				log.Println("* NO MORE MESSAGES")
-				break
-			}
-
-			messages = append(messages, msg)
-		}
-	}()
-
 	err := c.execute(cmd.Command(), handler)
 	if err != nil {
 		log.Panic(err)
 	}
 
 	<-handler.Done
-	log.Printf("Received %d messages.\n", len(messages))
+	log.Printf("Received %d messages.\n", len(handler.Messages))
 	return nil
 }

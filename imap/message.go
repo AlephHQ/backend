@@ -1,3 +1,5 @@
 package imap
 
-type Message struct{}
+type Message struct {
+	UID uint32
+}

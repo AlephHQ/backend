@@ -257,7 +257,12 @@ func (c *Client) Close() error {
 	cmd := command.NewCmdClose()
 	handler := response.NewHandlerClose(cmd.Tag)
 
-	return c.execute(cmd.Command(), handler)
+	err := c.execute(cmd.Command(), handler)
+	if err == nil {
+		c.setState(imap.AuthenticatedState)
+	}
+
+	return err
 }
 
 func (c *Client) Logout() error {
@@ -271,14 +276,13 @@ func (c *Client) Logout() error {
 	cmd := command.NewCmdLogout()
 	handler := response.NewHandlerLogout(cmd.Tag)
 
-	err := c.execute("logout", handler)
-	if err != nil {
-		return err
+	err := c.execute(cmd.Command(), handler)
+	if err == nil {
+		c.setState(imap.LogoutState)
 	}
 
 	c.conn.Close()
-
-	return nil
+	return err
 }
 
 func (c *Client) Select(name string) error {

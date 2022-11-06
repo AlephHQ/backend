@@ -160,6 +160,10 @@ func (c *Client) handle(resp *response.Response) error {
 
 			return err
 		}
+
+		if err != imap.ErrUnhandled {
+			return err
+		}
 	}
 
 	return imap.ErrUnhandled

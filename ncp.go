@@ -24,8 +24,12 @@ func main() {
 	}
 	log.Println(c.Mailbox())
 
-	err = c.Fetch()
+	messages, err := c.Fetch()
 	if err != nil {
 		log.Panic(err)
+	}
+
+	for _, msg := range messages {
+		log.Printf("msg: %v\n", msg)
 	}
 }

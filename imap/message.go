@@ -17,3 +17,44 @@ type Message struct {
 
 	Text string
 }
+
+func NewMessage(uid uint64) *Message {
+	return &Message{
+		UID:   uid,
+		Flags: make(map[string]bool),
+	}
+}
+
+func (m *Message) SetSeqNum(seqnum uint64) *Message {
+	m.SeqNum = seqnum
+
+	return m
+}
+
+func (m *Message) SetFlags(flags []string) *Message {
+	for _, f := range flags {
+		if f != "" {
+			m.Flags[f] = true
+		}
+	}
+
+	return m
+}
+
+func (m *Message) SetInternalDate(date string) *Message {
+	m.InternalDate = date
+
+	return m
+}
+
+func (m *Message) SetSize(s uint64) *Message {
+	m.Size = s
+
+	return m
+}
+
+func (m *Message) SetText(t string) *Message {
+	m.Text = t
+
+	return m
+}

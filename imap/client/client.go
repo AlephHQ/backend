@@ -306,7 +306,7 @@ func (c *Client) Mailbox() *imap.Mailbox {
 	return c.mbox
 }
 
-func (c *Client) Fetch() error {
+func (c *Client) Fetch() ([]*imap.Message, error) {
 	cmd := command.NewCmdFetch()
 	handler := response.NewHandlerFetch(cmd.Tag)
 	defer close(handler.Done)
@@ -318,5 +318,5 @@ func (c *Client) Fetch() error {
 
 	<-handler.Done
 	log.Printf("Received %d messages.\n", len(handler.Messages))
-	return nil
+	return handler.Messages, nil
 }

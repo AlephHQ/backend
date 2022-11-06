@@ -2,19 +2,20 @@ package response
 
 import (
 	"fmt"
+	"log"
 	"ncp/backend/imap"
 )
 
 type Fetch struct {
 	Tag      string
-	Messages []string
+	Messages []*imap.Message
 	Done     chan bool
 }
 
 func NewHandlerFetch(tag string) *Fetch {
 	return &Fetch{
 		Tag:      tag,
-		Messages: make([]string, 0),
+		Messages: make([]*imap.Message, 0),
 		Done:     make(chan bool),
 	}
 }
@@ -31,7 +32,12 @@ func (f *Fetch) Handle(resp *Response) (bool, error) {
 
 	msgStatusRespCode := imap.MessageStatusResponseCode(resp.Fields[2])
 	if msgStatusRespCode == imap.MessageStatusResponseCodeFetch {
-		f.Messages = append(f.Messages, resp.Raw)
+		msg, err := ParseMessage(resp)
+		if err != nil {
+			log.Panic(err)
+		}
+
+		f.Messages = append(f.Messages, msg)
 		return false, nil
 	}
 

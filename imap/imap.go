@@ -60,3 +60,12 @@ var ErrStatusNotOK = errors.New("status not ok")
 var ErrFoundSpecialChar = errors.New("found a special char")
 var ErrNotSpecialChar = errors.New("found a non-special char")
 var ErrUnhandled = errors.New("unhandled response")
+
+type MessageAttribute string
+
+const (
+	MessageAttributeFlags        MessageAttribute = "FLAGS"
+	MessageAttributeInternalDate MessageAttribute = "INTERNALDATE"
+	MessageAttributeRFC822Size   MessageAttribute = "RFC822.SIZE"
+	MessageAttributeEnvelope     MessageAttribute = "ENVELOPE"
+)

@@ -288,6 +288,7 @@ func (c *Client) Select(name string) error {
 	err := c.execute(cmd.Command(), handler)
 	if err == nil {
 		c.mbox = handler.Mailbox
+		c.setState(imap.SelectedState)
 	}
 
 	return err

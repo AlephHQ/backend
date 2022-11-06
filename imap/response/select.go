@@ -38,6 +38,7 @@ func (s *Select) Handle(resp *Response) (bool, error) {
 			return s.Tag == resp.Fields[0], nil
 		case imap.StatusResponseCodePermanentFlags:
 			s.Mailbox.SetPermanentFlags(strings.Split(strings.Trim(resp.Fields[4], "()"), " "))
+			return false, nil
 		case imap.StatusResponseCodeUnseen, imap.StatusResponseCodeUIDNext, imap.StatusResponseCodeUIDValidity:
 			num, err := strconv.ParseUint(resp.Fields[4], 10, 64)
 			if err != nil {
@@ -52,6 +53,8 @@ func (s *Select) Handle(resp *Response) (bool, error) {
 			case imap.StatusResponseCodeUIDValidity:
 				s.Mailbox.SetUIDValidity(num)
 			}
+
+			return false, nil
 		}
 
 		return false, imap.ErrUnhandled
@@ -79,16 +82,14 @@ func (s *Select) Handle(resp *Response) (bool, error) {
 			log.Panic(err)
 		}
 
-		if s.Mailbox != nil {
-			switch code {
-			case imap.DataResponseCodeExists:
-				s.Mailbox.SetExists(num)
-				return false, nil
-			case imap.DataResponseCodeRecent:
-				s.Mailbox.SetRecent(num)
-				return false, nil
-			}
+		switch code {
+		case imap.DataResponseCodeExists:
+			s.Mailbox.SetExists(num)
+		case imap.DataResponseCodeRecent:
+			s.Mailbox.SetRecent(num)
 		}
+
+		return false, nil
 	}
 
 	return false, imap.ErrUnhandled

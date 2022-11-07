@@ -149,6 +149,35 @@ func readNumber(reader io.RuneScanner) (uint64, error) {
 	}
 }
 
+func parseEnvelope(raw string) (*imap.Envelope, error) {
+	log.Println("ENVELOPE", raw)
+	envelope := imap.NewEnvelope()
+	reader := strings.NewReader(raw)
+
+	date, err := readString(reader)
+	if err != nil {
+		return nil, err
+	}
+	envelope.SetDate(date)
+
+	sp, err := readSpecialChar(reader)
+	if err != nil {
+		return nil, err
+	}
+
+	if sp != rune(imap.SpecialCharacterSpace) {
+		return nil, ErrParse
+	}
+
+	subject, err := readString(reader)
+	if err != nil {
+		return nil, err
+	}
+	envelope.SetSubject(subject)
+
+	return envelope, nil
+}
+
 func Parse(raw string) *Response {
 	resp := NewResponse(raw)
 	reader := bufio.NewReader(strings.NewReader(resp.Raw))
@@ -320,12 +349,17 @@ func ParseMessage(resp *Response) (*imap.Message, error) {
 						return nil, ErrParse
 					}
 
-					envelope, err := readList(reader)
+					envelopeRaw, err := readList(reader)
 					if err != nil {
 						return nil, err
 					}
 
-					log.Println("ENVELOPE", envelope)
+					envelope, err := parseEnvelope(envelopeRaw)
+					if err != nil {
+						return nil, err
+					}
+
+					message.SetEnvelope(envelope)
 				}
 			}
 		}

@@ -11,7 +11,7 @@ type Message struct {
 
 	Size uint64
 
-	Envelope interface{}
+	Envelope *Envelope
 
 	Body interface{}
 
@@ -55,6 +55,12 @@ func (m *Message) SetSize(s uint64) *Message {
 
 func (m *Message) SetText(t string) *Message {
 	m.Text = t
+
+	return m
+}
+
+func (m *Message) SetEnvelope(e *Envelope) *Message {
+	m.Envelope = e
 
 	return m
 }

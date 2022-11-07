@@ -68,7 +68,8 @@ func readRespStatusCodeArgs(reader io.RuneScanner) (string, error) {
 	}
 }
 
-// readList will read till end of list
+// readList will read till end of list, and assumes the first "(" has already
+// been read
 func readList(reader io.RuneScanner) (string, error) {
 	list := ""
 	nonClosedOpens := 0
@@ -95,6 +96,7 @@ func readList(reader io.RuneScanner) (string, error) {
 	}
 }
 
+// readString reads an entire string without assuming the first double quotes were read
 func readString(reader io.RuneScanner) (string, error) {
 	str := ""
 
@@ -123,6 +125,7 @@ func readString(reader io.RuneScanner) (string, error) {
 	return str, nil
 }
 
+// readNumber reads a number until it finds a non digit rune
 func readNumber(reader io.RuneScanner) (uint64, error) {
 	numStr := ""
 
@@ -307,6 +310,22 @@ func ParseMessage(resp *Response) (*imap.Message, error) {
 					} else {
 						return nil, err
 					}
+				case imap.MessageAttributeEnvelope:
+					sp, err = readSpecialChar(reader)
+					if err != nil {
+						return nil, err
+					}
+
+					if sp != rune(imap.SpecialCharacterListStart) {
+						return nil, ErrParse
+					}
+
+					envelope, err := readList(reader)
+					if err != nil {
+						return nil, err
+					}
+
+					log.Println("ENVELOPE", envelope)
 				}
 			}
 		}

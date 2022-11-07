@@ -66,7 +66,7 @@ func (s *Select) Handle(resp *Response) (bool, error) {
 	code := imap.DataResponseCode(resp.Fields[1])
 	switch code {
 	case imap.DataResponseCodeFlags:
-		flags := strings.Split(resp.Fields[3], " ")
+		flags := strings.Split(strings.Trim(resp.Fields[2], "()"), " ")
 		if s.Mailbox != nil {
 			s.Mailbox.SetFlags(flags)
 		}

@@ -12,6 +12,9 @@ import (
 
 var ErrParseNotMessage = errors.New("not a message response")
 var ErrParse = errors.New("message parse error")
+var ErrFoundNIL = errors.New("found NIL")
+var ErrNotList = errors.New("not a list")
+var ErrNotString = errors.New("not a string object")
 
 // readAtom reads until it finds a special character, and when it does
 // so, it returns the atom that precedes the special character and an
@@ -73,26 +76,53 @@ func readRespStatusCodeArgs(reader io.RuneScanner) (string, error) {
 func readList(reader io.RuneScanner) (string, error) {
 	list := ""
 	nonClosedOpens := 0
-	for {
-		r, _, err := reader.ReadRune()
-		if err != nil {
-			log.Panic(err)
-		}
 
-		if r == rune(imap.SpecialCharacterListStart) {
-			nonClosedOpens++
-		}
+	r, _, err := reader.ReadRune()
+	if err != nil {
+		log.Panic(err)
+	}
 
-		if r == rune(imap.SpecialCharacterListEnd) {
-			if nonClosedOpens == 0 {
-				reader.UnreadRune()
-				return list, nil
+	switch r {
+	case 'N':
+		// read and return nil
+		list += string(r)
+		for i := 0; i < 2; i++ {
+			r, _, err = reader.ReadRune()
+			if err != nil {
+				return "", err
 			}
 
-			nonClosedOpens--
+			list += string(r)
 		}
 
+		return list, nil
+	case rune(imap.SpecialCharacterListStart):
 		list += string(r)
+		nonClosedOpens++
+
+		for {
+			r, _, err = reader.ReadRune()
+			if err != nil {
+				log.Panic(err)
+			}
+
+			if r == rune(imap.SpecialCharacterListStart) {
+				nonClosedOpens++
+			}
+
+			if r == rune(imap.SpecialCharacterListEnd) {
+				nonClosedOpens--
+
+				if nonClosedOpens == 0 {
+					list += string(r)
+					return list, nil
+				}
+			}
+
+			list += string(r)
+		}
+	default:
+		return "", ErrNotList
 	}
 }
 
@@ -105,24 +135,34 @@ func readString(reader io.RuneScanner) (string, error) {
 		return str, err
 	}
 
-	if r != rune(imap.SpecialCharacterDoubleQuote) {
-		return str, ErrParse
-	}
+	switch r {
+	case rune(imap.SpecialCharacterDoubleQuote):
+		for {
+			r, _, err := reader.ReadRune()
+			if err != nil {
+				log.Panic(err)
+			}
 
-	for {
-		r, _, err := reader.ReadRune()
-		if err != nil {
-			log.Panic(err)
+			if r == rune(imap.SpecialCharacterDoubleQuote) {
+				break
+			}
+
+			str += string(r)
 		}
 
-		if r == rune(imap.SpecialCharacterDoubleQuote) {
-			break
-		}
-
+		return str, nil
+	case 'N':
 		str += string(r)
-	}
 
-	return str, nil
+		for i := 0; i < 2; i++ {
+			r, _, err = reader.ReadRune()
+			str += string(r)
+		}
+
+		return str, nil
+	default:
+		return "", ErrNotString
+	}
 }
 
 // readNumber reads a number until it finds a non digit rune
@@ -164,7 +204,6 @@ func parseEnvelope(raw string) (*imap.Envelope, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	if sp != rune(imap.SpecialCharacterSpace) {
 		return nil, ErrParse
 	}
@@ -174,6 +213,14 @@ func parseEnvelope(raw string) (*imap.Envelope, error) {
 		return nil, err
 	}
 	envelope.SetSubject(subject)
+
+	sp, err = readSpecialChar(reader)
+	if err != nil {
+		return nil, err
+	}
+	if sp != rune(imap.SpecialCharacterSpace) {
+		return nil, ErrParse
+	}
 
 	return envelope, nil
 }
@@ -220,19 +267,16 @@ func Parse(raw string) *Response {
 			if sp != rune(imap.SpecialCharacterSpace) {
 				switch sp {
 				case rune(imap.SpecialCharacterListStart):
-					// this is a list, read till end of list
-					resp.AddField(string(imap.SpecialCharacterListStart))
+					// this is a list, unread "(" and read
+					// to end of list
+					reader.UnreadRune()
+
 					list, err := readList(reader)
 					if err != nil {
 						log.Panic(err)
 					}
 
 					resp.AddField(list)
-					sp, err = readSpecialChar(reader)
-					if err != nil {
-						log.Panic(err)
-					}
-					resp.AddField(string(sp))
 				case rune(imap.SpecialCharacterRespCodeStart):
 					// this a status response code, read and store
 					// code, then read and store arguments, which
@@ -255,7 +299,6 @@ func Parse(raw string) *Response {
 								if sp != rune(imap.SpecialCharacterRespCodeEnd) {
 									log.Panic("expected \"]\", found " + "\"" + string(sp) + "\"")
 								}
-								resp.AddField(string(sp))
 							}
 						}
 
@@ -293,7 +336,7 @@ func ParseMessage(resp *Response) (*imap.Message, error) {
 	}
 	message := imap.NewMessage(uid)
 
-	reader := strings.NewReader(resp.Fields[4])
+	reader := strings.NewReader(resp.Fields[3])
 	for err != io.EOF {
 		var atom string
 		var sp rune
@@ -308,15 +351,6 @@ func ParseMessage(resp *Response) (*imap.Message, error) {
 			if sp == rune(imap.SpecialCharacterSpace) {
 				switch imap.MessageAttribute(atom) {
 				case imap.MessageAttributeFlags:
-					sp, err = readSpecialChar(reader)
-					if err != nil {
-						return nil, err
-					}
-
-					if sp != rune(imap.SpecialCharacterListStart) {
-						return nil, ErrParse
-					}
-
 					flagsStr, err := readList(reader)
 					if err != nil {
 						return nil, err
@@ -340,21 +374,12 @@ func ParseMessage(resp *Response) (*imap.Message, error) {
 						return nil, err
 					}
 				case imap.MessageAttributeEnvelope:
-					sp, err = readSpecialChar(reader)
-					if err != nil {
-						return nil, err
-					}
-
-					if sp != rune(imap.SpecialCharacterListStart) {
-						return nil, ErrParse
-					}
-
 					envelopeRaw, err := readList(reader)
 					if err != nil {
 						return nil, err
 					}
 
-					envelope, err := parseEnvelope(envelopeRaw)
+					envelope, err := parseEnvelope(strings.Trim(envelopeRaw, "()"))
 					if err != nil {
 						return nil, err
 					}

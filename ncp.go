@@ -30,6 +30,6 @@ func main() {
 	}
 
 	for _, msg := range messages {
-		log.Printf("msg: %v\n", msg)
+		log.Printf("msg: %v\n", msg.Envelope)
 	}
 }

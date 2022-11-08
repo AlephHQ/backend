@@ -58,8 +58,20 @@ func (e *Envelope) AddFromAddr(addr *Address) *Envelope {
 	return e
 }
 
+func (e *Envelope) SetFrom(addrs []*Address) *Envelope {
+	e.From = append(make([]*Address, 0), addrs...)
+
+	return e
+}
+
 func (e *Envelope) AddSenderAddr(addr *Address) *Envelope {
 	e.Sender = append(e.Sender, addr)
+
+	return e
+}
+
+func (e *Envelope) SetSender(addrs []*Address) *Envelope {
+	e.Sender = append(make([]*Address, 0), addrs...)
 
 	return e
 }
@@ -70,8 +82,20 @@ func (e *Envelope) AddReplyToAddr(addr *Address) *Envelope {
 	return e
 }
 
+func (e *Envelope) SetReplyTo(addrs []*Address) *Envelope {
+	e.ReplyTo = append(make([]*Address, 0), addrs...)
+
+	return e
+}
+
 func (e *Envelope) AddToAddr(addr *Address) *Envelope {
 	e.To = append(e.To, addr)
+
+	return e
+}
+
+func (e *Envelope) SetTo(addrs []*Address) *Envelope {
+	e.To = append(make([]*Address, 0), addrs...)
 
 	return e
 }
@@ -82,14 +106,32 @@ func (e *Envelope) AddCCAddr(addr *Address) *Envelope {
 	return e
 }
 
+func (e *Envelope) SetCC(addrs []*Address) *Envelope {
+	e.CC = append(make([]*Address, 0), addrs...)
+
+	return e
+}
+
 func (e *Envelope) AddBCCAddr(addr *Address) *Envelope {
 	e.BCC = append(e.BCC, addr)
 
 	return e
 }
 
+func (e *Envelope) SetBCC(addrs []*Address) *Envelope {
+	e.BCC = append(make([]*Address, 0), addrs...)
+
+	return e
+}
+
 func (e *Envelope) AddInReplyToAddr(addr *Address) *Envelope {
 	e.InReplyTo = append(e.InReplyTo, addr)
+
+	return e
+}
+
+func (e *Envelope) SetInReplyTo(addrs []*Address) *Envelope {
+	e.InReplyTo = append(make([]*Address, 0), addrs...)
 
 	return e
 }

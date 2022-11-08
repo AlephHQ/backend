@@ -13,5 +13,5 @@ func NewCmdFetch() *Fetch {
 }
 
 func (f *Fetch) Command() string {
-	return fmt.Sprintf("%s FETCH 6 ALL", f.Tag)
+	return fmt.Sprintf("%s FETCH 1:15 ALL", f.Tag)
 }

@@ -156,6 +156,10 @@ func readString(reader io.RuneScanner) (string, error) {
 
 		for i := 0; i < 2; i++ {
 			r, _, err = reader.ReadRune()
+			if err != nil {
+				return "", err
+			}
+
 			str += string(r)
 		}
 
@@ -163,6 +167,60 @@ func readString(reader io.RuneScanner) (string, error) {
 	default:
 		return "", ErrNotString
 	}
+}
+
+func parseAddressList(list string) ([]*imap.Address, error) {
+	result := make([]*imap.Address, 0)
+	if list == "NIL" {
+		return result, nil
+	}
+
+	reader := strings.NewReader(list)
+	r, _, err := reader.ReadRune()
+	if err != nil {
+		return result, err
+	}
+
+	if r != rune(imap.SpecialCharacterListStart) {
+		return result, ErrNotList
+	}
+
+	temp := make([]string, 0)
+	for {
+		r, _, err = reader.ReadRune()
+		if err != nil {
+			return result, err
+		}
+
+		if r == rune(imap.SpecialCharacterListEnd) {
+			break
+		}
+
+		if r == rune(imap.SpecialCharacterListStart) {
+			reader.UnreadRune()
+			addr, err := readList(reader)
+			if err != nil {
+				log.Panic(err)
+			}
+
+			temp = append(temp, strings.Trim(addr, "()"))
+		}
+	}
+
+	for _, a := range temp {
+		reader = strings.NewReader(a)
+		name, _ := readString(reader)
+		reader.ReadRune()  // reads a space
+		readString(reader) // reads atDomainList which we'll almost always ignore
+		reader.ReadRune()  // reads a space
+		mailbox, _ := readString(reader)
+		reader.ReadRune() // reads a space
+		host, _ := readString(reader)
+
+		result = append(result, imap.NewAddress(name, mailbox, host))
+	}
+
+	return result, nil
 }
 
 // readNumber reads a number until it finds a non digit rune
@@ -214,13 +272,41 @@ func parseEnvelope(raw string) (*imap.Envelope, error) {
 	}
 	envelope.SetSubject(subject)
 
-	sp, err = readSpecialChar(reader)
+	reader.ReadRune() // read space
+
+	addresses := make([][]*imap.Address, 0)
+	for i := 0; i < 7; i++ {
+		raw, err := readList(reader)
+		if err != nil {
+			return nil, err
+		}
+		addrs, err := parseAddressList(raw)
+		if err != nil {
+			return nil, err
+		}
+		addresses = append(addresses, addrs)
+
+		reader.ReadRune() // read space
+	}
+
+	if len(addresses) != 7 {
+		return nil, ErrParse
+	}
+
+	envelope.SetFrom(addresses[0])
+	envelope.SetSender(addresses[1])
+	envelope.SetReplyTo(addresses[2])
+	envelope.SetTo(addresses[3])
+	envelope.SetCC(addresses[4])
+	envelope.SetBCC(addresses[5])
+	envelope.SetInReplyTo(addresses[6])
+
+	messageID, err := readString(reader)
 	if err != nil {
 		return nil, err
 	}
-	if sp != rune(imap.SpecialCharacterSpace) {
-		return nil, ErrParse
-	}
+
+	envelope.SetMessageID(messageID)
 
 	return envelope, nil
 }

@@ -61,7 +61,7 @@ func (c *Client) waitForAndHandleGreeting() error {
 
 	if resp.Fields[2] == string(imap.SpecialCharacterRespCodeStart) {
 		code := imap.StatusResponseCode(resp.Fields[3])
-		fields := strings.Split(resp.Fields[5], " ")
+		fields := strings.Split(resp.Fields[4], " ")
 
 		switch code {
 		case imap.StatusResponseCodeCapability:

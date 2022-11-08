@@ -68,4 +68,5 @@ const (
 	MessageAttributeInternalDate MessageAttribute = "INTERNALDATE"
 	MessageAttributeRFC822Size   MessageAttribute = "RFC822.SIZE"
 	MessageAttributeEnvelope     MessageAttribute = "ENVELOPE"
+	MessageAttributeBody         MessageAttribute = "BODY"
 )

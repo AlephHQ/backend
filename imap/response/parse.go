@@ -471,6 +471,8 @@ func ParseMessage(resp *Response) (*imap.Message, error) {
 					}
 
 					message.SetEnvelope(envelope)
+				case imap.MessageAttributeBody:
+					log.Println("BODY YO")
 				}
 			}
 		}

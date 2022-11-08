@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 
-	"ncp/backend/imap"
 	"ncp/backend/imap/client"
 )
 
@@ -31,10 +30,6 @@ func main() {
 	}
 
 	for _, msg := range messages {
-		from := &imap.Address{}
-		if len(msg.Envelope.From) > 0 {
-			from = msg.Envelope.From[0]
-		}
-		log.Printf("%s - From: %v\n", msg.Envelope.Subject, from)
+		log.Printf("%v\n", msg)
 	}
 }

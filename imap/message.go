@@ -13,7 +13,7 @@ type Message struct {
 
 	Envelope *Envelope
 
-	Body interface{}
+	Body *Body
 
 	Text string
 }
@@ -57,6 +57,12 @@ func (m *Message) SetText(t string) *Message {
 
 func (m *Message) SetEnvelope(e *Envelope) *Message {
 	m.Envelope = e
+
+	return m
+}
+
+func (m *Message) SetBody(b *Body) *Message {
+	m.Body = b
 
 	return m
 }

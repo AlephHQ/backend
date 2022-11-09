@@ -392,6 +392,42 @@ func getAddresses(list interface{}) ([]*imap.Address, error) {
 	return result, nil
 }
 
+func getBodyPart(fields []interface{}) *imap.BodyStructure {
+	part := imap.NewBodyStrcuture()
+
+	if fields[0] != nil {
+		part.SetType(fields[0].(string))
+	}
+
+	if fields[1] != nil {
+		part.SetSubtype(fields[1].(string))
+	}
+
+	if fields[3] != nil {
+		part.SetID(fields[3].(string))
+	}
+
+	if fields[4] != nil {
+		part.SetDescription(fields[4].(string))
+	}
+
+	if fields[5] != nil {
+		part.SetEncoding(fields[5].(string))
+	}
+
+	if fields[6] != nil {
+		part.SetSize(fields[6].(uint64))
+	}
+
+	if paramList, ok := fields[2].([]interface{}); ok {
+		for i := 0; i < len(paramList)-1; i += 2 {
+			part.AddKeyValParam(paramList[i].(string), paramList[i+1].(string))
+		}
+	}
+
+	return part
+}
+
 func ParseMessage(resp *Response) (*imap.Message, error) {
 	uid, err := strconv.ParseUint(resp.Fields[1].(string), 10, 64)
 	if err != nil {
@@ -441,14 +477,10 @@ func ParseMessage(resp *Response) (*imap.Message, error) {
 
 			if date, ok := envelopeFields[0].(string); ok {
 				envelope.SetDate(date)
-			} else {
-				return nil, ErrParse
 			}
 
 			if subject, ok := envelopeFields[1].(string); ok {
 				envelope.SetSubject(subject)
-			} else {
-				return nil, ErrParse
 			}
 
 			from, err := getAddresses(envelopeFields[2])
@@ -500,6 +532,31 @@ func ParseMessage(resp *Response) (*imap.Message, error) {
 			message.SetEnvelope(envelope)
 			i += 2
 		case imap.MessageAttributeBody:
+			// when dealing with body, the first element is either
+			// a string (simple non-multipart message) or a list
+			// (multipart message), so we need to handle both cases
+			bodyFields := fields[1].([]interface{})
+			body := imap.NewBody()
+			if _, ok := bodyFields[0].(string); ok {
+				part := getBodyPart(bodyFields)
+				body.AddPart(part).SetMultipart(false)
+			}
+
+			if firstPart, ok := bodyFields[0].([]interface{}); ok {
+				body.AddPart(getBodyPart(firstPart)).SetMultipart(true)
+
+				for _, elem := range bodyFields[1:] {
+					if partFields, ok := elem.([]interface{}); ok {
+						body.AddPart(getBodyPart(partFields))
+					}
+
+					if multiSubtype, ok := elem.(string); ok {
+						body.SetMultipartSubtype(multiSubtype)
+					}
+				}
+			}
+
+			message.SetBody(body)
 			i += 2
 		}
 	}

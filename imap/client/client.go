@@ -177,6 +177,7 @@ func (c *Client) read() {
 		}
 
 		if respRaw != "" {
+			log.Println(respRaw)
 			resp := response.Parse(respRaw)
 			if err := c.handle(resp); err == imap.ErrUnhandled {
 				c.handleUnsolicitedResp(resp)

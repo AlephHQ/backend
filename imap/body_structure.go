@@ -7,7 +7,7 @@ type BodyStructure struct {
 	ID            string
 	Description   string
 	Encoding      string
-	Size          string
+	Size          uint64
 }
 
 func NewBodyStrcuture() *BodyStructure {
@@ -52,7 +52,7 @@ func (bs *BodyStructure) SetEncoding(enc string) *BodyStructure {
 	return bs
 }
 
-func (bs *BodyStructure) SetSize(size string) *BodyStructure {
+func (bs *BodyStructure) SetSize(size uint64) *BodyStructure {
 	bs.Size = size
 
 	return bs

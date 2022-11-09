@@ -2,8 +2,8 @@ package imap
 
 type Body struct {
 	Parts            []*BodyStructure
-	MultipartSubtype string
 	Multipart        bool
+	MultipartSubtype string
 }
 
 func NewBody() *Body {

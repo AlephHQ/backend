@@ -14,7 +14,8 @@ var ErrParseNotMessage = errors.New("not a message response")
 var ErrParse = errors.New("message parse error")
 var ErrFoundNIL = errors.New("found NIL")
 var ErrNotList = errors.New("not a list")
-var ErrNotString = errors.New("not a string object")
+var ErrNotString = errors.New("not a string")
+var ErrNotNumber = errors.New("not a number")
 
 // readAtom reads until it finds a special character, and when it does
 // so, it returns the atom that precedes the special character and an
@@ -73,33 +74,35 @@ func readRespStatusCodeArgs(reader io.RuneScanner) (string, error) {
 
 // readList will read till end of list, and assumes the first "(" has already
 // been read
-func readList(reader io.RuneScanner) (string, error) {
-	list := ""
-	nonClosedOpens := 0
+func readList(reader io.RuneScanner) ([]interface{}, error) {
+	result := make([]interface{}, 0)
 
 	r, _, err := reader.ReadRune()
 	if err != nil {
 		log.Panic(err)
 	}
 
+	var current string
 	switch r {
 	case 'N':
 		// read and return nil
-		list += string(r)
+		current += string(r)
 		for i := 0; i < 2; i++ {
 			r, _, err = reader.ReadRune()
 			if err != nil {
-				return "", err
+				return nil, err
 			}
 
-			list += string(r)
+			current += string(r)
 		}
 
-		return list, nil
-	case rune(imap.SpecialCharacterListStart):
-		list += string(r)
-		nonClosedOpens++
+		if current == "NIL" {
+			result = append(result, nil)
+			return result, nil
+		}
 
+		return nil, ErrParse
+	case rune(imap.SpecialCharacterListStart):
 		for {
 			r, _, err = reader.ReadRune()
 			if err != nil {
@@ -107,22 +110,67 @@ func readList(reader io.RuneScanner) (string, error) {
 			}
 
 			if r == rune(imap.SpecialCharacterListStart) {
-				nonClosedOpens++
+				reader.UnreadRune()
+				nested, err := readList(reader)
+				if err != nil {
+					return nil, err
+				}
+
+				result = append(result, nested)
+				continue
 			}
 
 			if r == rune(imap.SpecialCharacterListEnd) {
-				nonClosedOpens--
-
-				if nonClosedOpens == 0 {
-					list += string(r)
-					return list, nil
-				}
+				return result, nil
 			}
 
-			list += string(r)
+			switch r {
+			case rune(imap.SpecialCharacterDoubleQuote):
+				reader.UnreadRune()
+				str, err := readString(reader)
+				if err != nil {
+					return nil, ErrParse
+				}
+
+				result = append(result, str)
+			case 'N':
+				current = "N"
+				for i := 0; i < 2; i++ {
+					r, _, err = reader.ReadRune()
+					if err != nil {
+						return nil, err
+					}
+
+					current += string(r)
+				}
+
+				if current == "NIL" {
+					result = append(result, nil)
+				} else {
+					return nil, ErrParse
+				}
+			case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+				reader.UnreadRune()
+				num, err := readNumber(reader)
+				if err != nil && err != imap.ErrFoundSpecialChar {
+					return nil, ErrParse
+				}
+
+				result = append(result, num)
+			case rune(imap.SpecialCharacterSpace):
+				// do nothing
+			default:
+				reader.UnreadRune()
+				atom, err := readAtom(reader)
+				if err != nil && err != imap.ErrFoundSpecialChar {
+					return nil, ErrParse
+				}
+
+				result = append(result, atom)
+			}
 		}
 	default:
-		return "", ErrNotList
+		return nil, ErrNotList
 	}
 }
 
@@ -203,7 +251,7 @@ func parseAddressList(list string) ([]*imap.Address, error) {
 				log.Panic(err)
 			}
 
-			temp = append(temp, strings.Trim(addr, "()"))
+			log.Println(addr)
 		}
 	}
 
@@ -274,39 +322,39 @@ func parseEnvelope(raw string) (*imap.Envelope, error) {
 
 	reader.ReadRune() // read space
 
-	addresses := make([][]*imap.Address, 0)
-	for i := 0; i < 7; i++ {
-		raw, err := readList(reader)
-		if err != nil {
-			return nil, err
-		}
-		addrs, err := parseAddressList(raw)
-		if err != nil {
-			return nil, err
-		}
-		addresses = append(addresses, addrs)
+	// addresses := make([][]*imap.Address, 0)
+	// for i := 0; i < 7; i++ {
+	// 	raw, err := readList(reader)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	addrs, err := parseAddressList(raw)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	addresses = append(addresses, addrs)
 
-		reader.ReadRune() // read space
-	}
+	// 	reader.ReadRune() // read space
+	// }
 
-	if len(addresses) != 7 {
-		return nil, ErrParse
-	}
+	// if len(addresses) != 7 {
+	// 	return nil, ErrParse
+	// }
 
-	envelope.SetFrom(addresses[0])
-	envelope.SetSender(addresses[1])
-	envelope.SetReplyTo(addresses[2])
-	envelope.SetTo(addresses[3])
-	envelope.SetCC(addresses[4])
-	envelope.SetBCC(addresses[5])
-	envelope.SetInReplyTo(addresses[6])
+	// envelope.SetFrom(addresses[0])
+	// envelope.SetSender(addresses[1])
+	// envelope.SetReplyTo(addresses[2])
+	// envelope.SetTo(addresses[3])
+	// envelope.SetCC(addresses[4])
+	// envelope.SetBCC(addresses[5])
+	// envelope.SetInReplyTo(addresses[6])
 
-	messageID, err := readString(reader)
-	if err != nil {
-		return nil, err
-	}
+	// messageID, err := readString(reader)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	envelope.SetMessageID(messageID)
+	// envelope.SetMessageID(messageID)
 
 	return envelope, nil
 }
@@ -353,16 +401,33 @@ func Parse(raw string) *Response {
 			if sp != rune(imap.SpecialCharacterSpace) {
 				switch sp {
 				case rune(imap.SpecialCharacterListStart):
-					// this is a list, unread "(" and read
-					// to end of list
-					reader.UnreadRune()
+					// this is either a list or a regular info string
+					// that contains open and close parentheses such
+					// as (Ubuntu) or (0.001 + 0.000 s). We must be able
+					// to handle both cases.
+					//
+					// Only cases where this isn't the start of an actual
+					// list are when this is an OK, NO, BYE, or BAD status
+					// response.
+					status := imap.StatusResponse(resp.Fields[1].(string))
+					switch status {
+					case imap.StatusResponseBAD, imap.StatusResponseNO, imap.StatusResponseOK, imap.StatusResponseBYE, imap.StatusResponsePREAUTH:
+						str, err := readAtom(reader)
+						if err != nil && err != imap.ErrFoundSpecialChar {
+							log.Panic(err)
+						}
 
-					list, err := readList(reader)
-					if err != nil {
-						log.Panic(err)
+						resp.AddField("(" + str)
+					default:
+						reader.UnreadRune()
+
+						list, err := readList(reader)
+						if err != nil {
+							log.Panic(err)
+						}
+
+						resp.AddField(list)
 					}
-
-					resp.AddField(list)
 				case rune(imap.SpecialCharacterRespCodeStart):
 					// this a status response code, read and store
 					// code, then read and store arguments, which
@@ -413,68 +478,148 @@ func Parse(raw string) *Response {
 	return resp
 }
 
+func getAddresses(list interface{}) ([]*imap.Address, error) {
+	result := make([]*imap.Address, 0)
+	if list == nil {
+		return result, nil
+	}
+
+	l := list.([]interface{})
+	for _, addr := range l {
+		if addrFields, ok := addr.([]interface{}); !ok {
+			return nil, ErrParse
+		} else {
+			var name, mailbox, host string
+
+			if name, ok = addrFields[0].(string); !ok {
+				name = ""
+			}
+
+			if mailbox, ok = addrFields[2].(string); !ok {
+				mailbox = ""
+			}
+
+			if host, ok = addrFields[3].(string); !ok {
+				host = ""
+			}
+
+			result = append(result, imap.NewAddress(name, mailbox, host))
+		}
+	}
+
+	return result, nil
+}
+
 func ParseMessage(resp *Response) (*imap.Message, error) {
 	log.Println(resp.Raw)
 
-	uid, err := strconv.ParseUint(resp.Fields[1], 10, 64)
+	uid, err := strconv.ParseUint(resp.Fields[1].(string), 10, 64)
 	if err != nil {
 		return nil, err
 	}
 	message := imap.NewMessage(uid)
 
-	reader := strings.NewReader(resp.Fields[3])
-	for err != io.EOF {
-		var atom string
-		var sp rune
+	log.Println(resp.Fields[3])
+	fields := resp.Fields[3].([]interface{})
+	i := 0
+	for i < len(fields)-1 {
+		attribute, ok := fields[i].(string)
+		if !ok {
+			return nil, ErrParse
+		}
 
-		atom, err = readAtom(reader)
-		if err == imap.ErrFoundSpecialChar {
-			sp, err = readSpecialChar(reader)
+		switch imap.MessageAttribute(attribute) {
+		case imap.MessageAttributeFlags:
+			flags := fields[i+1].([]interface{})
+			for _, f := range flags {
+				if flag, ok := f.(string); ok {
+					message.SetFlag(flag)
+				} else {
+					return nil, ErrParse
+				}
+			}
+
+			i += 2
+		case imap.MessageAttributeInternalDate:
+			if date, ok := fields[i+1].(string); ok {
+				message.SetInternalDate(date)
+			} else {
+				return nil, ErrParse
+			}
+
+			i += 2
+		case imap.MessageAttributeRFC822Size:
+			if size, ok := fields[i+1].(uint64); ok {
+				message.SetSize(size)
+			} else {
+				return nil, ErrParse
+			}
+
+			i += 2
+		case imap.MessageAttributeEnvelope:
+			envelope := imap.NewEnvelope()
+			envelopeFields := fields[i+1].([]interface{})
+
+			if date, ok := envelopeFields[0].(string); ok {
+				envelope.SetDate(date)
+			} else {
+				return nil, ErrParse
+			}
+
+			if subject, ok := envelopeFields[1].(string); ok {
+				envelope.SetSubject(subject)
+			} else {
+				return nil, ErrParse
+			}
+
+			from, err := getAddresses(envelopeFields[2])
 			if err != nil {
 				return nil, err
 			}
+			envelope.SetFrom(from)
 
-			if sp == rune(imap.SpecialCharacterSpace) {
-				switch imap.MessageAttribute(atom) {
-				case imap.MessageAttributeFlags:
-					flagsStr, err := readList(reader)
-					if err != nil {
-						return nil, err
-					}
-
-					flags := strings.Split(flagsStr, " ")
-					message.SetFlags(flags)
-				case imap.MessageAttributeInternalDate:
-					var date string
-					date, err = readString(reader)
-					if err != nil {
-						return nil, err
-					}
-
-					message.SetInternalDate(date)
-				case imap.MessageAttributeRFC822Size:
-					size, err := readNumber(reader)
-					if err == imap.ErrFoundSpecialChar {
-						message.SetSize(size)
-					} else {
-						return nil, err
-					}
-				case imap.MessageAttributeEnvelope:
-					envelopeRaw, err := readList(reader)
-					if err != nil {
-						return nil, err
-					}
-
-					envelope, err := parseEnvelope(strings.Trim(envelopeRaw, "()"))
-					if err != nil {
-						return nil, err
-					}
-
-					message.SetEnvelope(envelope)
-				case imap.MessageAttributeBody:
-					log.Println("BODY YO")
-				}
+			sender, err := getAddresses(envelopeFields[3])
+			if err != nil {
+				return nil, err
 			}
+			envelope.SetSender(sender)
+
+			replyTo, err := getAddresses(envelopeFields[4])
+			if err != nil {
+				return nil, err
+			}
+			envelope.SetReplyTo(replyTo)
+
+			to, err := getAddresses(envelopeFields[5])
+			if err != nil {
+				return nil, err
+			}
+			envelope.SetTo(to)
+
+			cc, err := getAddresses(envelopeFields[6])
+			if err != nil {
+				return nil, err
+			}
+			envelope.SetCC(cc)
+
+			bcc, err := getAddresses(envelopeFields[7])
+			if err != nil {
+				return nil, err
+			}
+			envelope.SetBCC(bcc)
+
+			inReplyto, err := getAddresses(envelopeFields[8])
+			if err != nil {
+				return nil, err
+			}
+			envelope.SetInReplyTo(inReplyto)
+
+			if messageID, ok := envelopeFields[9].(string); ok {
+				envelope.SetMessageID(messageID)
+			}
+
+			message.SetEnvelope(envelope)
+			i += 2
 		}
 	}
 

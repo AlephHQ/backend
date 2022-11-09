@@ -20,14 +20,14 @@ func NewHandlerLogin(tag string) *Login {
 
 func (l *Login) Handle(resp *Response) (bool, error) {
 	if l.Tag == resp.Fields[0] {
-		status := imap.StatusResponse(resp.Fields[1])
+		status := imap.StatusResponse(resp.Fields[1].(string))
 		switch status {
 		case imap.StatusResponseNO:
-			return true, errors.New(strings.Join(resp.Fields[5:], " "))
+			return true, errors.New( /* strings.Join(resp.Fields[5:], " ") */ "error")
 		case imap.StatusResponseOK:
 			if resp.Fields[2] == string(imap.SpecialCharacterRespCodeStart) {
-				code := imap.StatusResponseCode(resp.Fields[3])
-				fields := strings.Split(resp.Fields[4], " ")
+				code := imap.StatusResponseCode(resp.Fields[3].(string))
+				fields := strings.Split(resp.Fields[4].(string), " ")
 
 				switch code {
 				case imap.StatusResponseCodeCapability:
@@ -38,7 +38,7 @@ func (l *Login) Handle(resp *Response) (bool, error) {
 				return true, nil
 			}
 		case imap.StatusResponseBAD:
-			return true, errors.New(strings.Join(resp.Fields[1:], " "))
+			return true, errors.New( /* strings.Join(resp.Fields[1:], " ") */ "error")
 		}
 	}
 

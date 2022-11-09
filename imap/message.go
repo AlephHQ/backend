@@ -31,12 +31,8 @@ func (m *Message) SetSeqNum(seqnum uint64) *Message {
 	return m
 }
 
-func (m *Message) SetFlags(flags []string) *Message {
-	for _, f := range flags {
-		if f != "" {
-			m.Flags[f] = true
-		}
-	}
+func (m *Message) SetFlag(flag string) *Message {
+	m.Flags[flag] = true
 
 	return m
 }

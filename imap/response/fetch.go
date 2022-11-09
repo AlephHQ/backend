@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"ncp/backend/imap"
-	"strings"
 )
 
 type Fetch struct {
@@ -22,18 +21,18 @@ func NewHandlerFetch(tag string) *Fetch {
 }
 
 func (f *Fetch) Handle(resp *Response) (bool, error) {
-	status := imap.StatusResponse(resp.Fields[1])
+	status := imap.StatusResponse(resp.Fields[1].(string))
 	switch status {
 	case imap.StatusResponseOK:
 		go func() { f.Done <- true }() // go channels are so damn cool
 		return true, nil
 	case imap.StatusResponseNO:
-		return true, fmt.Errorf("FETCH error: %s", strings.Join(resp.Fields[2:], " "))
+		return true, fmt.Errorf("FETCH error: %s" /* strings.Join(resp.Fields[2:], " ") */, "error")
 	case imap.StatusResponseBAD:
-		return true, fmt.Errorf("FETCH error: %s", strings.Join(resp.Fields[2:], " "))
+		return true, fmt.Errorf("FETCH error: %s" /* strings.Join(resp.Fields[2:], " ") */, "error")
 	}
 
-	msgStatusRespCode := imap.MessageStatusResponseCode(resp.Fields[2])
+	msgStatusRespCode := imap.MessageStatusResponseCode(resp.Fields[2].(string))
 	if msgStatusRespCode == imap.MessageStatusResponseCodeFetch {
 		msg, err := ParseMessage(resp)
 		if err != nil {

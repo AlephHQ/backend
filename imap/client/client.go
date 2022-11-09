@@ -49,7 +49,7 @@ func (c *Client) waitForAndHandleGreeting() error {
 	}
 
 	resp := response.Parse(greeting)
-	status := imap.StatusResponse(resp.Fields[1])
+	status := imap.StatusResponse(resp.Fields[1].(string))
 	switch status {
 	case imap.StatusResponseOK:
 		c.setState(imap.NotAuthenticatedState)
@@ -60,8 +60,8 @@ func (c *Client) waitForAndHandleGreeting() error {
 	}
 
 	if resp.Fields[2] == string(imap.SpecialCharacterRespCodeStart) {
-		code := imap.StatusResponseCode(resp.Fields[3])
-		fields := strings.Split(resp.Fields[4], " ")
+		code := imap.StatusResponseCode(resp.Fields[3].(string))
+		fields := strings.Split(resp.Fields[4].(string), " ")
 
 		switch code {
 		case imap.StatusResponseCodeCapability:
@@ -112,7 +112,7 @@ func (c *Client) handleUnsolicitedResp(resp *response.Response) {
 		return
 	}
 
-	status := imap.StatusResponse(resp.Fields[1])
+	status := imap.StatusResponse(resp.Fields[1].(string))
 	switch status {
 	case imap.StatusResponseBAD, imap.StatusResponseBYE, imap.StatusResponseNO:
 		log.Println(resp.Raw)
@@ -177,6 +177,7 @@ func (c *Client) read() {
 		}
 
 		if respRaw != "" {
+			log.Println(respRaw)
 			resp := response.Parse(respRaw)
 			if err := c.handle(resp); err == imap.ErrUnhandled {
 				c.handleUnsolicitedResp(resp)

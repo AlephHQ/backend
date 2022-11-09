@@ -11,7 +11,7 @@ func NewHandlerClose(tag string) *Close {
 }
 
 func (c *Close) Handle(resp *Response) (bool, error) {
-	status := imap.StatusResponse(resp.Fields[1])
+	status := imap.StatusResponse(resp.Fields[1].(string))
 	switch status {
 	case imap.StatusResponseOK:
 		// c.setState(imap.AuthenticatedState)

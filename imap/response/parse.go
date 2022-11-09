@@ -537,7 +537,7 @@ func ParseMessage(resp *Response) (*imap.Message, error) {
 			// when dealing with body, the first element is either
 			// a string (simple non-multipart message) or a list
 			// (multipart message), so we need to handle both cases
-			bodyFields := fields[1].([]interface{})
+			bodyFields := fields[i+1].([]interface{})
 			body := imap.NewBody()
 			if _, ok := bodyFields[0].(string); ok {
 				part := getBodyPart(bodyFields)

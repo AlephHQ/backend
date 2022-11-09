@@ -13,6 +13,8 @@ const (
 	SpecialCharacterPlus          SpecialCharacter = '+'
 	SpecialCharacterListStart     SpecialCharacter = '('
 	SpecialCharacterListEnd       SpecialCharacter = ')'
+	SpecialCharacterOpenCurly     SpecialCharacter = '{'
+	SpecialCharacterCloseCurly    SpecialCharacter = '}'
 )
 
 var specialChars map[SpecialCharacter]bool
@@ -30,6 +32,8 @@ func init() {
 	specialChars[SpecialCharacterPlus] = true
 	specialChars[SpecialCharacterListStart] = true
 	specialChars[SpecialCharacterListEnd] = true
+	specialChars[SpecialCharacterOpenCurly] = true
+	specialChars[SpecialCharacterCloseCurly] = true
 }
 
 func IsSpecialChar(r rune) bool {

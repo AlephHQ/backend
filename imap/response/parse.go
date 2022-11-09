@@ -241,6 +241,74 @@ func readNumber(reader io.RuneScanner) (uint64, error) {
 	}
 }
 
+func getAddresses(list interface{}) ([]*imap.Address, error) {
+	result := make([]*imap.Address, 0)
+	if list == nil {
+		return result, nil
+	}
+
+	l := list.([]interface{})
+	for _, addr := range l {
+		if addrFields, ok := addr.([]interface{}); !ok {
+			return nil, ErrParse
+		} else {
+			var name, mailbox, host string
+
+			if name, ok = addrFields[0].(string); !ok {
+				name = ""
+			}
+
+			if mailbox, ok = addrFields[2].(string); !ok {
+				mailbox = ""
+			}
+
+			if host, ok = addrFields[3].(string); !ok {
+				host = ""
+			}
+
+			result = append(result, imap.NewAddress(name, mailbox, host))
+		}
+	}
+
+	return result, nil
+}
+
+func getBodyPart(fields []interface{}) *imap.BodyStructure {
+	part := imap.NewBodyStrcuture()
+
+	if fields[0] != nil {
+		part.SetType(fields[0].(string))
+	}
+
+	if fields[1] != nil {
+		part.SetSubtype(fields[1].(string))
+	}
+
+	if fields[3] != nil {
+		part.SetID(fields[3].(string))
+	}
+
+	if fields[4] != nil {
+		part.SetDescription(fields[4].(string))
+	}
+
+	if fields[5] != nil {
+		part.SetEncoding(fields[5].(string))
+	}
+
+	if fields[6] != nil {
+		part.SetSize(fields[6].(uint64))
+	}
+
+	if paramList, ok := fields[2].([]interface{}); ok {
+		for i := 0; i < len(paramList)-1; i += 2 {
+			part.AddKeyValParam(paramList[i].(string), paramList[i+1].(string))
+		}
+	}
+
+	return part
+}
+
 func Parse(raw string) *Response {
 	resp := NewResponse(raw)
 	reader := bufio.NewReader(strings.NewReader(resp.Raw))
@@ -360,74 +428,6 @@ func Parse(raw string) *Response {
 	return resp
 }
 
-func getAddresses(list interface{}) ([]*imap.Address, error) {
-	result := make([]*imap.Address, 0)
-	if list == nil {
-		return result, nil
-	}
-
-	l := list.([]interface{})
-	for _, addr := range l {
-		if addrFields, ok := addr.([]interface{}); !ok {
-			return nil, ErrParse
-		} else {
-			var name, mailbox, host string
-
-			if name, ok = addrFields[0].(string); !ok {
-				name = ""
-			}
-
-			if mailbox, ok = addrFields[2].(string); !ok {
-				mailbox = ""
-			}
-
-			if host, ok = addrFields[3].(string); !ok {
-				host = ""
-			}
-
-			result = append(result, imap.NewAddress(name, mailbox, host))
-		}
-	}
-
-	return result, nil
-}
-
-func getBodyPart(fields []interface{}) *imap.BodyStructure {
-	part := imap.NewBodyStrcuture()
-
-	if fields[0] != nil {
-		part.SetType(fields[0].(string))
-	}
-
-	if fields[1] != nil {
-		part.SetSubtype(fields[1].(string))
-	}
-
-	if fields[3] != nil {
-		part.SetID(fields[3].(string))
-	}
-
-	if fields[4] != nil {
-		part.SetDescription(fields[4].(string))
-	}
-
-	if fields[5] != nil {
-		part.SetEncoding(fields[5].(string))
-	}
-
-	if fields[6] != nil {
-		part.SetSize(fields[6].(uint64))
-	}
-
-	if paramList, ok := fields[2].([]interface{}); ok {
-		for i := 0; i < len(paramList)-1; i += 2 {
-			part.AddKeyValParam(paramList[i].(string), paramList[i+1].(string))
-		}
-	}
-
-	return part
-}
-
 func ParseMessage(resp *Response) (*imap.Message, error) {
 	uid, err := strconv.ParseUint(resp.Fields[1].(string), 10, 64)
 	if err != nil {
@@ -534,9 +534,13 @@ func ParseMessage(resp *Response) (*imap.Message, error) {
 			message.SetEnvelope(envelope)
 			i += 2
 		case imap.MessageAttributeBody:
-			// when dealing with body, the first element is either
-			// a string (simple non-multipart message) or a list
-			// (multipart message), so we need to handle both cases
+			// we have to be careful when dealing with BODY, as there
+			// are multiple cases we need to be able to handle.
+			//
+			// 1. single part response: BODY (part fields)
+			// 2. multipart response: BODY ((part fields)(part fields) multipart subtype)
+			// 3. response to a BODY[section (HEADER | TEXT | num)] command
+			// 4. response to a BODY.PEEK[section (HEADER | TEXT | num)] command
 			bodyFields := fields[i+1].([]interface{})
 			body := imap.NewBody()
 			if _, ok := bodyFields[0].(string); ok {

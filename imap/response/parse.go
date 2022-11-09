@@ -481,6 +481,8 @@ func ParseMessage(resp *Response) (*imap.Message, error) {
 
 			if subject, ok := envelopeFields[1].(string); ok {
 				envelope.SetSubject(subject)
+			} else {
+				envelope.SetSubject("(No Subject)")
 			}
 
 			from, err := getAddresses(envelopeFields[2])

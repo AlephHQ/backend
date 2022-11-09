@@ -2,16 +2,26 @@ package command
 
 import "fmt"
 
+type FetchMacro string
+
+const (
+	FetchMacroAll  FetchMacro = "ALL"
+	FetchMacroFast FetchMacro = "FAST"
+	FetchMacroFull FetchMacro = "FULL"
+)
+
 type Fetch struct {
-	Tag string
+	Tag   string
+	Macro FetchMacro
 }
 
-func NewCmdFetch() *Fetch {
+func NewCmdFetch(macro FetchMacro) *Fetch {
 	return &Fetch{
-		Tag: getTag(),
+		Tag:   getTag(),
+		Macro: macro,
 	}
 }
 
 func (f *Fetch) Command() string {
-	return fmt.Sprintf("%s FETCH 1:15 FULL", f.Tag)
+	return fmt.Sprintf("%s FETCH 1:15 %s", f.Tag, f.Macro)
 }

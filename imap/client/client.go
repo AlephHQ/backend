@@ -307,7 +307,7 @@ func (c *Client) Mailbox() *imap.Mailbox {
 	return c.mbox
 }
 
-func (c *Client) Fetch(m command.FetchMacro) ([]*imap.Message, error) {
+func (c *Client) Fetch(m imap.FetchMacro) ([]*imap.Message, error) {
 	cmd := command.NewCmdFetch(m)
 	handler := response.NewHandlerFetch(cmd.Tag)
 	defer close(handler.Done)

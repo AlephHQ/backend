@@ -70,3 +70,11 @@ const (
 	MessageAttributeEnvelope     MessageAttribute = "ENVELOPE"
 	MessageAttributeBody         MessageAttribute = "BODY"
 )
+
+type FetchMacro string
+
+const (
+	FetchMacroAll  FetchMacro = "ALL"
+	FetchMacroFast FetchMacro = "FAST"
+	FetchMacroFull FetchMacro = "FULL"
+)

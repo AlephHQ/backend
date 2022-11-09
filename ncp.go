@@ -3,8 +3,8 @@ package main
 import (
 	"log"
 
+	"ncp/backend/imap"
 	"ncp/backend/imap/client"
-	"ncp/backend/imap/command"
 )
 
 func main() {
@@ -25,7 +25,7 @@ func main() {
 	}
 	log.Println(c.Mailbox())
 
-	messages, err := c.Fetch(command.FetchMacroAll)
+	messages, err := c.Fetch(imap.FetchMacroAll)
 	if err != nil {
 		log.Panic(err)
 	}

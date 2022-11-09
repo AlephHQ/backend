@@ -1,21 +1,16 @@
 package command
 
-import "fmt"
-
-type FetchMacro string
-
-const (
-	FetchMacroAll  FetchMacro = "ALL"
-	FetchMacroFast FetchMacro = "FAST"
-	FetchMacroFull FetchMacro = "FULL"
+import (
+	"fmt"
+	"ncp/backend/imap"
 )
 
 type Fetch struct {
 	Tag   string
-	Macro FetchMacro
+	Macro imap.FetchMacro
 }
 
-func NewCmdFetch(macro FetchMacro) *Fetch {
+func NewCmdFetch(macro imap.FetchMacro) *Fetch {
 	return &Fetch{
 		Tag:   getTag(),
 		Macro: macro,

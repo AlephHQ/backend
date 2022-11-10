@@ -6,17 +6,19 @@ import (
 )
 
 type Fetch struct {
-	Tag   string
-	Macro imap.FetchMacro
+	Tag    string
+	Macro  imap.FetchMacro
+	SeqSet *imap.SeqSet
 }
 
-func NewCmdFetch(macro imap.FetchMacro) *Fetch {
+func NewCmdFetch(seqset *imap.SeqSet, macro imap.FetchMacro) *Fetch {
 	return &Fetch{
-		Tag:   getTag(),
-		Macro: macro,
+		Tag:    getTag(),
+		Macro:  macro,
+		SeqSet: seqset,
 	}
 }
 
 func (f *Fetch) Command() string {
-	return fmt.Sprintf("%s FETCH 1:15 %s", f.Tag, f.Macro)
+	return fmt.Sprintf("%s FETCH %s %s", f.Tag, f.SeqSet.String(), f.Macro)
 }

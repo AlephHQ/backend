@@ -1,7 +1,6 @@
 package imap
 
 import (
-	"errors"
 	"regexp"
 )
 
@@ -57,12 +56,6 @@ type MessageStatusResponseCode string
 const (
 	MessageStatusResponseCodeFetch MessageStatusResponseCode = "FETCH"
 )
-
-var ErrNotStatusRespCode = errors.New("not a status response code")
-var ErrStatusNotOK = errors.New("status not ok")
-var ErrFoundSpecialChar = errors.New("found a special char")
-var ErrNotSpecialChar = errors.New("found a non-special char")
-var ErrUnhandled = errors.New("unhandled response")
 
 type MessageAttribute string
 

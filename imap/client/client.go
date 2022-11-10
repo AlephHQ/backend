@@ -1,7 +1,6 @@
 package client
 
 import (
-	"errors"
 	"io"
 	"log"
 	"sync"
@@ -32,8 +31,6 @@ type Handled struct {
 	Unregister bool
 	Err        error
 }
-
-var ErrNotSelectedState = errors.New("not in selected state")
 
 // BEGIN UNEXPORTED
 
@@ -222,10 +219,14 @@ func (c *Client) Login(username, password string) error {
 	handler := response.NewHandlerLogin(cmd.Tag)
 
 	err := c.execute(cmd.Command(), handler)
-	if err == nil && len(handler.Capabilities) > 0 {
-		for _, cap := range handler.Capabilities {
-			c.capabilities[cap] = true
+	if err == nil {
+		if len(handler.Capabilities) > 0 {
+			for _, cap := range handler.Capabilities {
+				c.capabilities[cap] = true
+			}
 		}
+
+		c.setState(imap.AuthenticatedState)
 	}
 
 	return err
@@ -233,7 +234,7 @@ func (c *Client) Login(username, password string) error {
 
 func (c *Client) Close() error {
 	if c.state != imap.SelectedState {
-		return ErrNotSelectedState
+		return imap.ErrNotSelected
 	}
 
 	cmd := command.NewCmdClose()
@@ -268,6 +269,10 @@ func (c *Client) Logout() error {
 }
 
 func (c *Client) Select(name string) error {
+	if c.state != imap.AuthenticatedState {
+		return imap.ErrNotAuthenticated
+	}
+
 	cmd := command.NewCmdSelect(name)
 	handler := response.NewHandlerSelect(name, cmd.Tag)
 
@@ -284,8 +289,12 @@ func (c *Client) Mailbox() *imap.Mailbox {
 	return c.mbox
 }
 
-func (c *Client) Fetch(m imap.FetchMacro) ([]*imap.Message, error) {
-	cmd := command.NewCmdFetch(m)
+func (c *Client) Fetch(seqset *imap.SeqSet, m imap.FetchMacro) ([]*imap.Message, error) {
+	if c.state != imap.SelectedState {
+		return nil, imap.ErrNotSelected
+	}
+
+	cmd := command.NewCmdFetch(seqset, m)
 	handler := response.NewHandlerFetch(cmd.Tag)
 	defer close(handler.Done)
 

@@ -14,8 +14,6 @@ type Message struct {
 	Envelope *Envelope
 
 	Body *Body
-
-	Text string
 }
 
 func NewMessage(uid uint64) *Message {
@@ -45,12 +43,6 @@ func (m *Message) SetInternalDate(date string) *Message {
 
 func (m *Message) SetSize(s uint64) *Message {
 	m.Size = s
-
-	return m
-}
-
-func (m *Message) SetText(t string) *Message {
-	m.Text = t
 
 	return m
 }

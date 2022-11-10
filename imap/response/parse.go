@@ -96,7 +96,8 @@ func ParseMessage(resp *Response) (*imap.Message, error) {
 			return nil, ErrParse
 		}
 
-		switch imap.MessageAttribute(attribute) {
+		compAttr := imap.NewCompoundMessageAttribute(attribute)
+		switch compAttr.Attribute {
 		case imap.MessageAttributeFlags:
 			flags := fields[i+1].([]interface{})
 			for _, f := range flags {
@@ -186,33 +187,36 @@ func ParseMessage(resp *Response) (*imap.Message, error) {
 
 			message.SetEnvelope(envelope)
 			i += 2
-		case imap.MessageAttributeBody:
-			// we have to be careful when dealing with BODY, as there
-			// are multiple cases we need to be able to handle.
-			//
-			// 1. single part response: BODY (part fields)
-			// 2. multipart response: BODY ((part fields)(part fields) multipart subtype)
-			// 3. response to a BODY[section (HEADER | TEXT | num)] command
-			// 4. response to a BODY.PEEK[section (HEADER | TEXT | num)] command
-			bodyFields := fields[i+1].([]interface{})
-			body := imap.NewBody()
-			if _, ok := bodyFields[0].(string); ok {
-				part := getBodyPart(bodyFields)
-				body.AddPart(part).SetMultipart(false)
+		case imap.MessageAttributeBody, imap.MessageAttributeBodyPeek:
+			body := message.Body
+			if body == nil {
+				body = imap.NewBody()
 			}
 
-			if firstPart, ok := bodyFields[0].([]interface{}); ok {
-				body.AddPart(getBodyPart(firstPart)).SetMultipart(true)
+			if compAttr.Section == "" { // BODY case
+				bodyFields := fields[i+1].([]interface{})
+				if _, ok := bodyFields[0].(string); ok {
+					part := getBodyPart(bodyFields)
+					body.AddPart(part).SetMultipart(false)
+				}
 
-				for _, elem := range bodyFields[1:] {
-					if partFields, ok := elem.([]interface{}); ok {
-						body.AddPart(getBodyPart(partFields))
-					}
+				if firstPart, ok := bodyFields[0].([]interface{}); ok {
+					body.AddPart(getBodyPart(firstPart)).SetMultipart(true)
 
-					if multiSubtype, ok := elem.(string); ok {
-						body.SetMultipartSubtype(multiSubtype)
+					for _, elem := range bodyFields[1:] {
+						if partFields, ok := elem.([]interface{}); ok {
+							body.AddPart(getBodyPart(partFields))
+						}
+
+						if multiSubtype, ok := elem.(string); ok {
+							body.SetMultipartSubtype(multiSubtype)
+						}
 					}
 				}
+			} else {
+				// BODY[section] case
+				bodySection := fields[i+1].(string)
+				body.SetSection(compAttr.Section, bodySection)
 			}
 
 			message.SetBody(body)

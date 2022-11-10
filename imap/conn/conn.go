@@ -9,7 +9,7 @@ import (
 type Conn struct {
 	net.Conn
 
-	*Reader
+	*IMAPReader
 	*Writer
 
 	isTLS bool
@@ -31,7 +31,7 @@ func New(network, addr string, isTLS bool) (*Conn, error) {
 
 	conn := &Conn{}
 	conn.Conn = c
-	conn.Reader = NewReader(c)
+	conn.IMAPReader = NewIMAPReader(c)
 	conn.Writer = NewWriter(c)
 	conn.isTLS = isTLS
 
@@ -39,5 +39,5 @@ func New(network, addr string, isTLS bool) (*Conn, error) {
 }
 
 func (c *Conn) ReadResponse() (*response.Response, error) {
-	return c.Reader.read()
+	return c.IMAPReader.read()
 }

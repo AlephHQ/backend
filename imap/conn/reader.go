@@ -17,12 +17,12 @@ var ErrNotList = errors.New("not a list")
 var ErrNotString = errors.New("not a string")
 var ErrNotNumber = errors.New("not a number")
 
-type Reader struct {
+type IMAPReader struct {
 	r *bufio.Reader
 }
 
-func NewReader(r io.Reader) *Reader {
-	reader := &Reader{}
+func NewIMAPReader(r io.Reader) *IMAPReader {
+	reader := &IMAPReader{}
 	reader.r = bufio.NewReader(r)
 
 	return reader
@@ -33,7 +33,7 @@ func NewReader(r io.Reader) *Reader {
 // error indicating it found a special character
 //
 // BODY is an atom, BODY[TEXT] is an atom, BODY[1.HEADER], is an atom
-func (reader *Reader) readAtom() (string, error) {
+func (reader *IMAPReader) readAtom() (string, error) {
 	r, _, err := reader.r.ReadRune()
 	if err != nil {
 		return "", err
@@ -70,7 +70,7 @@ func (reader *Reader) readAtom() (string, error) {
 }
 
 // readSpecialChar reads a single special character
-func (reader *Reader) readSpecialChar() (rune, error) {
+func (reader *IMAPReader) readSpecialChar() (rune, error) {
 	r, _, err := reader.r.ReadRune()
 	if err != nil {
 		return 0, err
@@ -84,7 +84,7 @@ func (reader *Reader) readSpecialChar() (rune, error) {
 	return 0, imap.ErrNotSpecialChar
 }
 
-func (reader *Reader) readString() (string, error) {
+func (reader *IMAPReader) readString() (string, error) {
 	str := ""
 
 	r, _, err := reader.r.ReadRune()
@@ -153,7 +153,7 @@ func (reader *Reader) readString() (string, error) {
 	}
 }
 
-func (reader *Reader) readNumber() (uint64, error) {
+func (reader *IMAPReader) readNumber() (uint64, error) {
 	numStr := ""
 
 	for {
@@ -176,7 +176,7 @@ func (reader *Reader) readNumber() (uint64, error) {
 	}
 }
 
-func (reader *Reader) readList() ([]interface{}, error) {
+func (reader *IMAPReader) readList() ([]interface{}, error) {
 	result := make([]interface{}, 0)
 
 	r, _, err := reader.r.ReadRune()
@@ -276,7 +276,7 @@ func (reader *Reader) readList() ([]interface{}, error) {
 	}
 }
 
-func (reader *Reader) read() (*response.Response, error) {
+func (reader *IMAPReader) read() (*response.Response, error) {
 	resp := response.NewResponse()
 
 	// read the first char with the assumption that

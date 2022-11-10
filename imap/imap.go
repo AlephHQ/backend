@@ -1,6 +1,9 @@
 package imap
 
-import "errors"
+import (
+	"errors"
+	"regexp"
+)
 
 // RFC3501 Section 3
 type ConnectionState int
@@ -69,7 +72,33 @@ const (
 	MessageAttributeRFC822Size   MessageAttribute = "RFC822.SIZE"
 	MessageAttributeEnvelope     MessageAttribute = "ENVELOPE"
 	MessageAttributeBody         MessageAttribute = "BODY"
+	MessageAttributeBodyPeek     MessageAttribute = "BODY.PEEK"
 )
+
+type CompoundMessageAttribute struct {
+	Attribute MessageAttribute
+	Section   string
+	Partial   string
+}
+
+func NewCompoundMessageAttribute(attribute string) *CompoundMessageAttribute {
+	re := regexp.MustCompile(`[\[\]]`)
+	fields := re.Split(attribute, -1)
+	cma := &CompoundMessageAttribute{
+		Attribute: MessageAttribute(fields[0]),
+	}
+
+	l := len(fields)
+	if l > 1 {
+		cma.Section = fields[1]
+	}
+
+	if l > 2 {
+		cma.Partial = fields[2]
+	}
+
+	return cma
+}
 
 type FetchMacro string
 

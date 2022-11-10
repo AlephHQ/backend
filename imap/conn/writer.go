@@ -3,24 +3,22 @@ package conn
 import (
 	"bufio"
 	"io"
-	"log"
 )
 
 const crlf = "\r\n"
 
-type Writer struct {
+type IMAPWriter struct {
 	*bufio.Writer
 }
 
-func NewWriter(w io.Writer) *Writer {
-	wr := &Writer{}
+func NewIMAPWriter(w io.Writer) *IMAPWriter {
+	wr := &IMAPWriter{}
 	wr.Writer = bufio.NewWriter(w)
 
 	return wr
 }
 
-func (w *Writer) WriteCommand(cmd string) error {
-	log.Println(cmd)
+func (w *IMAPWriter) writeCommand(cmd string) error {
 	_, err := w.Writer.WriteString(cmd + crlf)
 	if err != nil {
 		return err

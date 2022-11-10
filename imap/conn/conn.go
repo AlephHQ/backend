@@ -10,7 +10,7 @@ type Conn struct {
 	net.Conn
 
 	*IMAPReader
-	*Writer
+	*IMAPWriter
 
 	isTLS bool
 }
@@ -32,12 +32,16 @@ func New(network, addr string, isTLS bool) (*Conn, error) {
 	conn := &Conn{}
 	conn.Conn = c
 	conn.IMAPReader = NewIMAPReader(c)
-	conn.Writer = NewWriter(c)
+	conn.IMAPWriter = NewIMAPWriter(c)
 	conn.isTLS = isTLS
 
 	return conn, nil
 }
 
-func (c *Conn) ReadResponse() (*response.Response, error) {
+func (c *Conn) Read() (*response.Response, error) {
 	return c.IMAPReader.read()
+}
+
+func (c *Conn) Write(cmd string) error {
+	return c.IMAPWriter.writeCommand(cmd)
 }

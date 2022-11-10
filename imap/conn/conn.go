@@ -39,5 +39,5 @@ func New(network, addr string, isTLS bool) (*Conn, error) {
 }
 
 func (c *Conn) ReadResponse() (*response.Response, error) {
-	return c.read()
+	return c.Reader.read()
 }

@@ -50,7 +50,7 @@ func main() {
 				[]*imap.DataItem{
 					{
 						Name:    imap.DataItemNameBody,
-						Section: "1",
+						Section: "2",
 					},
 				},
 				"",
@@ -59,7 +59,7 @@ func main() {
 				log.Panic(err)
 			}
 
-			log.Println(msg[0].Body.Sections["1"])
+			log.Println(msg[0].Body.Sections["2"])
 		}
 	}
 }

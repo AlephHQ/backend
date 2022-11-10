@@ -25,7 +25,10 @@ func main() {
 	}
 	log.Println(c.Mailbox())
 
-	messages, err := c.Fetch(imap.NewSeqSet(c.Mailbox().Exists-4, c.Mailbox().Exists), imap.FetchMacroAll)
+	messages, err := c.Fetch(
+		imap.NewSeqSet(c.Mailbox().Exists-4, c.Mailbox().Exists),
+		imap.FetchMacroAll,
+	)
 	if err != nil {
 		log.Panic(err)
 	}

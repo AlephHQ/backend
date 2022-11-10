@@ -38,6 +38,6 @@ func New(network, addr string, isTLS bool) (*Conn, error) {
 	return conn, nil
 }
 
-func (c *Conn) Read() (*response.Response, error) {
+func (c *Conn) ReadResponse() (*response.Response, error) {
 	return c.read()
 }

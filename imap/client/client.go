@@ -41,7 +41,7 @@ func (c *Client) waitForAndHandleGreeting() error {
 	var err error
 	var resp *response.Response
 	for resp == nil {
-		resp, err = c.conn.Read()
+		resp, err = c.conn.ReadResponse()
 		if err != nil {
 			log.Panic(err)
 		}
@@ -150,7 +150,7 @@ func (c *Client) handle(resp *response.Response) error {
 
 func (c *Client) read() {
 	for {
-		resp, err := c.conn.Read()
+		resp, err := c.conn.ReadResponse()
 		if err != nil && err != io.EOF {
 			log.Println(err)
 		}

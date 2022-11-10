@@ -3,18 +3,18 @@ package imap
 type SpecialCharacter rune
 
 const (
-	SpecialCharacterSpace         SpecialCharacter = ' '
-	SpecialCharacterStar          SpecialCharacter = '*'
-	SpecialCharacterCR            SpecialCharacter = '\r'
-	SpecialCharacterLF            SpecialCharacter = '\n'
-	SpecialCharacterDoubleQuote   SpecialCharacter = '"'
-	SpecialCharacterRespCodeStart SpecialCharacter = '['
-	SpecialCharacterRespCodeEnd   SpecialCharacter = ']'
-	SpecialCharacterPlus          SpecialCharacter = '+'
-	SpecialCharacterListStart     SpecialCharacter = '('
-	SpecialCharacterListEnd       SpecialCharacter = ')'
-	SpecialCharacterOpenCurly     SpecialCharacter = '{'
-	SpecialCharacterCloseCurly    SpecialCharacter = '}'
+	SpecialCharacterSpace        SpecialCharacter = ' '
+	SpecialCharacterStar         SpecialCharacter = '*'
+	SpecialCharacterCR           SpecialCharacter = '\r'
+	SpecialCharacterLF           SpecialCharacter = '\n'
+	SpecialCharacterDoubleQuote  SpecialCharacter = '"'
+	SpecialCharacterOpenBracket  SpecialCharacter = '['
+	SpecialCharacterCloseBracket SpecialCharacter = ']'
+	SpecialCharacterPlus         SpecialCharacter = '+'
+	SpecialCharacterListStart    SpecialCharacter = '('
+	SpecialCharacterListEnd      SpecialCharacter = ')'
+	SpecialCharacterOpenCurly    SpecialCharacter = '{'
+	SpecialCharacterCloseCurly   SpecialCharacter = '}'
 )
 
 var specialChars map[SpecialCharacter]bool
@@ -27,8 +27,8 @@ func init() {
 	specialChars[SpecialCharacterCR] = true
 	specialChars[SpecialCharacterLF] = true
 	specialChars[SpecialCharacterDoubleQuote] = true
-	specialChars[SpecialCharacterRespCodeStart] = true
-	specialChars[SpecialCharacterRespCodeEnd] = true
+	specialChars[SpecialCharacterOpenBracket] = true
+	specialChars[SpecialCharacterCloseBracket] = true
 	specialChars[SpecialCharacterPlus] = true
 	specialChars[SpecialCharacterListStart] = true
 	specialChars[SpecialCharacterListEnd] = true

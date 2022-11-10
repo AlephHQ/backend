@@ -59,7 +59,7 @@ func (c *Client) waitForAndHandleGreeting() error {
 		return imap.ErrStatusNotOK
 	}
 
-	if resp.Fields[2] == string(imap.SpecialCharacterRespCodeStart) {
+	if resp.Fields[2] == string(imap.SpecialCharacterOpenBracket) {
 		code := imap.StatusResponseCode(resp.Fields[3].(string))
 		fields := strings.Split(resp.Fields[4].(string), " ")
 
@@ -118,7 +118,7 @@ func (c *Client) handleUnsolicitedResp(resp *response.Response) {
 		log.Println(resp.Raw)
 		return
 	case imap.StatusResponseOK:
-		if resp.Fields[2] == string(imap.SpecialCharacterRespCodeStart) {
+		if resp.Fields[2] == string(imap.SpecialCharacterOpenBracket) {
 			code := resp.Fields[3]
 			log.Printf("*** Unsolicited - %s\n", code)
 		}
@@ -129,17 +129,16 @@ func (c *Client) readOne() (string, error) {
 	respRaw := ""
 	for {
 		r, _, err := c.conn.ReadRune()
+		if r == 0 || err == io.EOF {
+			return respRaw, nil
+		}
+
 		if err != nil {
 			return "", err
 		}
 
 		respRaw += string(r)
-		if r == rune(imap.SpecialCharacterLF) {
-			break
-		}
 	}
-
-	return respRaw, nil
 }
 
 func (c *Client) setState(state imap.ConnectionState) {

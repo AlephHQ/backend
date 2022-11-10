@@ -25,7 +25,7 @@ func (l *Login) Handle(resp *Response) (bool, error) {
 		case imap.StatusResponseNO:
 			return true, errors.New( /* strings.Join(resp.Fields[5:], " ") */ "error")
 		case imap.StatusResponseOK:
-			if resp.Fields[2] == string(imap.SpecialCharacterRespCodeStart) {
+			if resp.Fields[2] == string(imap.SpecialCharacterOpenBracket) {
 				code := imap.StatusResponseCode(resp.Fields[3].(string))
 				fields := strings.Split(resp.Fields[4].(string), " ")
 

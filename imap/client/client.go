@@ -4,7 +4,6 @@ import (
 	"errors"
 	"io"
 	"log"
-	"strings"
 	"sync"
 
 	"ncp/backend/imap"
@@ -39,16 +38,15 @@ var ErrNotSelectedState = errors.New("not in selected state")
 // BEGIN UNEXPORTED
 
 func (c *Client) waitForAndHandleGreeting() error {
-	greeting := ""
 	var err error
-	for greeting == "" {
-		greeting, err = c.readOne()
+	var resp *response.Response
+	for resp == nil {
+		resp, err = c.conn.Read()
 		if err != nil {
 			log.Panic(err)
 		}
 	}
 
-	resp := response.Parse(greeting)
 	status := imap.StatusResponse(resp.Fields[1].(string))
 	switch status {
 	case imap.StatusResponseOK:
@@ -59,18 +57,18 @@ func (c *Client) waitForAndHandleGreeting() error {
 		return imap.ErrStatusNotOK
 	}
 
-	if resp.Fields[2] == string(imap.SpecialCharacterOpenBracket) {
-		code := imap.StatusResponseCode(resp.Fields[3].(string))
-		fields := strings.Split(resp.Fields[4].(string), " ")
+	// if resp.Fields[2] == string(imap.SpecialCharacterOpenBracket) {
+	// 	code := imap.StatusResponseCode(resp.Fields[3].(string))
+	// 	fields := strings.Split(resp.Fields[4].(string), " ")
 
-		switch code {
-		case imap.StatusResponseCodeCapability:
-			c.capabilities = make(map[string]bool)
-			for _, cap := range fields[1:] {
-				c.capabilities[cap] = true
-			}
-		}
-	}
+	// 	switch code {
+	// 	case imap.StatusResponseCodeCapability:
+	// 		c.capabilities = make(map[string]bool)
+	// 		for _, cap := range fields[1:] {
+	// 			c.capabilities[cap] = true
+	// 		}
+	// 	}
+	// }
 
 	return nil
 }
@@ -152,30 +150,14 @@ func (c *Client) handle(resp *response.Response) error {
 	return imap.ErrUnhandled
 }
 
-func (c *Client) readOne() (string, error) {
-	respRaw := ""
-	for {
-		r, _, err := c.conn.ReadRune()
-		if err != nil {
-			log.Panic(err)
-		}
-
-		respRaw += string(r)
-		if r == rune(imap.SpecialCharacterLF) {
-			return respRaw, nil
-		}
-	}
-}
-
 func (c *Client) read() {
 	for {
-		respRaw, err := c.readOne()
+		resp, err := c.conn.Read()
 		if err != nil && err != io.EOF {
 			log.Println(err)
 		}
 
-		if respRaw != "" {
-			resp := response.Parse(respRaw)
+		if resp != nil {
 			if err := c.handle(resp); err == imap.ErrUnhandled {
 				c.handleUnsolicitedResp(resp)
 			}

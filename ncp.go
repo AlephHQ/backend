@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 
-	"ncp/backend/imap"
 	"ncp/backend/imap/client"
 )
 
@@ -14,23 +13,23 @@ func main() {
 	}
 	defer c.Logout()
 
-	err = c.Login("mo@modsoussi.com", "alohomora")
-	if err != nil {
-		log.Panic(err)
-	}
+	// err = c.Login("mo@modsoussi.com", "alohomora")
+	// if err != nil {
+	// 	log.Panic(err)
+	// }
 
-	err = c.Select("inbox")
-	if err != nil {
-		log.Panic(err)
-	}
-	log.Println(c.Mailbox())
+	// err = c.Select("inbox")
+	// if err != nil {
+	// 	log.Panic(err)
+	// }
+	// log.Println(c.Mailbox())
 
-	messages, err := c.Fetch(imap.FetchMacroAll)
-	if err != nil {
-		log.Panic(err)
-	}
+	// messages, err := c.Fetch(imap.FetchMacroAll)
+	// if err != nil {
+	// 	log.Panic(err)
+	// }
 
-	for _, msg := range messages {
-		log.Printf("%v\n", msg.Envelope.Subject)
-	}
+	// for _, msg := range messages {
+	// 	log.Printf("%v\n", msg.Envelope.Subject)
+	// }
 }

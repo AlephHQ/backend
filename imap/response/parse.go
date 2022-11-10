@@ -347,7 +347,7 @@ func getBodyPart(fields []interface{}) *imap.BodyStructure {
 }
 
 func Parse(raw string) *Response {
-	resp := NewResponse(raw)
+	resp := NewResponse()
 	reader := bufio.NewReader(strings.NewReader(resp.Raw))
 
 	if resp.Raw == "" {
@@ -362,8 +362,6 @@ func Parse(raw string) *Response {
 			resp.AddField(string(sp))
 			// resp.Tagged is already false, so no need to set this
 		}
-	} else if err == imap.ErrNotSpecialChar {
-		resp.Tagged = true
 	} else {
 		log.Panic(err)
 	}

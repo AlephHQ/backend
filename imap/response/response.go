@@ -7,15 +7,12 @@ type Response struct {
 	// Fields contains all the different fields received
 	// in the response
 	Fields []interface{}
-
-	// Tagged indicates whether this is a tagged response
-	Tagged bool
 }
 
-func NewResponse(raw string) *Response {
-	resp := &Response{}
-	resp.Raw = raw
-	resp.Fields = make([]interface{}, 0)
+func NewResponse() *Response {
+	resp := &Response{
+		Fields: make([]interface{}, 0),
+	}
 
 	return resp
 }

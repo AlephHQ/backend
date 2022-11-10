@@ -2,6 +2,7 @@ package conn
 
 import (
 	"crypto/tls"
+	"ncp/backend/imap/response"
 	"net"
 )
 
@@ -32,7 +33,11 @@ func New(network, addr string, isTLS bool) (*Conn, error) {
 	conn.Conn = c
 	conn.Reader = NewReader(c)
 	conn.Writer = NewWriter(c)
-	conn.isTLS = true
+	conn.isTLS = isTLS
 
 	return conn, nil
+}
+
+func (c *Conn) Read() (*response.Response, error) {
+	return c.read()
 }

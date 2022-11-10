@@ -11,8 +11,8 @@ const (
 	SpecialCharacterOpenBracket  SpecialCharacter = '['
 	SpecialCharacterCloseBracket SpecialCharacter = ']'
 	SpecialCharacterPlus         SpecialCharacter = '+'
-	SpecialCharacterListStart    SpecialCharacter = '('
-	SpecialCharacterListEnd      SpecialCharacter = ')'
+	SpecialCharacterOpenParen    SpecialCharacter = '('
+	SpecialCharacterCloseParen   SpecialCharacter = ')'
 	SpecialCharacterOpenCurly    SpecialCharacter = '{'
 	SpecialCharacterCloseCurly   SpecialCharacter = '}'
 )
@@ -30,8 +30,8 @@ func init() {
 	specialChars[SpecialCharacterOpenBracket] = true
 	specialChars[SpecialCharacterCloseBracket] = true
 	specialChars[SpecialCharacterPlus] = true
-	specialChars[SpecialCharacterListStart] = true
-	specialChars[SpecialCharacterListEnd] = true
+	specialChars[SpecialCharacterOpenParen] = true
+	specialChars[SpecialCharacterCloseParen] = true
 	specialChars[SpecialCharacterOpenCurly] = true
 	specialChars[SpecialCharacterCloseCurly] = true
 }

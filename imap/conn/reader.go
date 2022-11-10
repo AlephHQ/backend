@@ -34,21 +34,32 @@ func NewReader(r io.Reader) *Reader {
 //
 // BODY is an atom, BODY[TEXT] is an atom, BODY[1.HEADER], is an atom
 func (reader *Reader) readAtom() (string, error) {
-	atom := ""
+	r, _, err := reader.r.ReadRune()
+	if err != nil {
+		return "", err
+	}
+
+	if imap.IsSpecialChar(r) {
+		reader.r.UnreadRune()
+		return "", nil
+	}
+
+	atom := string(r)
+	foundOpenBracket := false // this is to handle BODY[...] cases
 	for {
-		r, _, err := reader.r.ReadRune()
+		r, _, err = reader.r.ReadRune()
 		if err != nil {
 			return "", err
 		}
 
-		if imap.IsSpecialChar(r) {
-			switch imap.SpecialCharacter(r) {
-			case imap.SpecialCharacterOpenBracket, imap.SpecialCharacterCloseBracket:
-				if atom == "" || atom[0:4] != "BODY" {
-					reader.r.UnreadRune()
-					return atom, nil
-				}
-			default:
+		switch imap.SpecialCharacter(r) {
+		case imap.SpecialCharacterSpace, imap.SpecialCharacterCR, imap.SpecialCharacterCloseParen:
+			reader.r.UnreadRune()
+			return atom, nil
+		case imap.SpecialCharacterOpenBracket:
+			foundOpenBracket = true
+		case imap.SpecialCharacterCloseBracket:
+			if !foundOpenBracket {
 				reader.r.UnreadRune()
 				return atom, nil
 			}
@@ -193,14 +204,14 @@ func (reader *Reader) readList() ([]interface{}, error) {
 		}
 
 		return nil, ErrParse
-	case rune(imap.SpecialCharacterListStart):
+	case rune(imap.SpecialCharacterOpenParen):
 		for {
 			r, _, err = reader.r.ReadRune()
 			if err != nil {
 				log.Panic(err)
 			}
 
-			if r == rune(imap.SpecialCharacterListStart) {
+			if r == rune(imap.SpecialCharacterOpenParen) {
 				reader.r.UnreadRune()
 				nested, err := reader.readList()
 				if err != nil {
@@ -211,7 +222,7 @@ func (reader *Reader) readList() ([]interface{}, error) {
 				continue
 			}
 
-			if r == rune(imap.SpecialCharacterListEnd) {
+			if r == rune(imap.SpecialCharacterCloseParen) {
 				return result, nil
 			}
 
@@ -295,7 +306,7 @@ func (reader *Reader) read() (*response.Response, error) {
 			}
 
 			switch sp {
-			case rune(imap.SpecialCharacterListStart):
+			case rune(imap.SpecialCharacterOpenParen):
 				// this is either a list or a regular info string
 				// that contains open and close parentheses such
 				// as (Ubuntu) or (0.001 + 0.000 s). We must be able
@@ -329,21 +340,37 @@ func (reader *Reader) read() (*response.Response, error) {
 				// to be handled later by the appropriate
 				// handler
 				statusRespCodeFields := make([]interface{}, 0)
+				atom, err := reader.readAtom()
+				if err != nil {
+					return nil, err
+				}
+
+				statusRespCodeFields = append(statusRespCodeFields, atom)
 				for {
-					atom, err := reader.readAtom()
-					if err != nil {
-						return nil, err
-					}
-
-					statusRespCodeFields = append(statusRespCodeFields, atom)
 					sp, err := reader.readSpecialChar()
-					if err != nil {
-						return nil, err
+					if err == imap.ErrNotSpecialChar {
+						atom, err = reader.readAtom()
+						if err != nil {
+							return nil, err
+						}
+
+						statusRespCodeFields = append(statusRespCodeFields, atom)
 					}
 
-					if sp == rune(imap.SpecialCharacterCloseBracket) {
+					if imap.SpecialCharacter(sp) == imap.SpecialCharacterCloseBracket {
 						resp.AddField(statusRespCodeFields)
 						break
+					}
+
+					switch imap.SpecialCharacter(sp) {
+					case imap.SpecialCharacterOpenParen:
+						reader.r.UnreadRune()
+						args, err := reader.readList()
+						if err != nil {
+							return nil, err
+						}
+
+						statusRespCodeFields = append(statusRespCodeFields, args)
 					}
 				}
 			case rune(imap.SpecialCharacterCR):

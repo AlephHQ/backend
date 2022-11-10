@@ -18,11 +18,11 @@ func main() {
 		log.Panic(err)
 	}
 
-	// err = c.Select("inbox")
-	// if err != nil {
-	// 	log.Panic(err)
-	// }
-	// log.Println(c.Mailbox())
+	err = c.Select("inbox")
+	if err != nil {
+		log.Panic(err)
+	}
+	log.Println(c.Mailbox())
 
 	// messages, err := c.Fetch(imap.FetchMacroAll)
 	// if err != nil {

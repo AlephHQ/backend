@@ -4,7 +4,6 @@ import (
 	"errors"
 	"log"
 	"strconv"
-	"strings"
 
 	"ncp/backend/imap"
 )
@@ -28,33 +27,42 @@ func (s *Select) Handle(resp *Response) (bool, error) {
 	switch status {
 	case imap.StatusResponseOK:
 		// set read and write permissions
-		statusRespCode := imap.StatusResponseCode(resp.Fields[3].(string))
-		switch statusRespCode {
-		case imap.StatusResponseCodeReadOnly, imap.StatusResponseCodeReadWrite:
-			if s.Mailbox != nil {
-				s.Mailbox.SetReadOnly(statusRespCode == imap.StatusResponseCodeReadOnly)
-			}
+		if statusRespCodeFields, ok := resp.Fields[2].([]interface{}); ok {
+			statusRespCode := imap.StatusResponseCode(statusRespCodeFields[0].(string))
+			switch statusRespCode {
+			case imap.StatusResponseCodeReadOnly, imap.StatusResponseCodeReadWrite:
+				if s.Mailbox != nil {
+					s.Mailbox.SetReadOnly(statusRespCode == imap.StatusResponseCodeReadOnly)
+				}
 
-			return s.Tag == resp.Fields[0], nil
-		case imap.StatusResponseCodePermanentFlags:
-			s.Mailbox.SetPermanentFlags(strings.Split(strings.Trim(resp.Fields[4].(string), "()"), " "))
-			return false, nil
-		case imap.StatusResponseCodeUnseen, imap.StatusResponseCodeUIDNext, imap.StatusResponseCodeUIDValidity:
-			num, err := strconv.ParseUint(resp.Fields[4].(string), 10, 64)
-			if err != nil {
-				log.Panic(err)
-			}
+				return s.Tag == resp.Fields[0], nil
+			case imap.StatusResponseCodePermanentFlags:
+				permflags := make([]string, 0)
+				if list, ok := statusRespCodeFields[1].([]interface{}); ok {
+					for _, flag := range list {
+						permflags = append(permflags, flag.(string))
+					}
+				}
 
-			switch imap.StatusResponseCode(statusRespCode) {
-			case imap.StatusResponseCodeUnseen:
-				s.Mailbox.SetUnseen(num)
-			case imap.StatusResponseCodeUIDNext:
-				s.Mailbox.SetUIDNext(num)
-			case imap.StatusResponseCodeUIDValidity:
-				s.Mailbox.SetUIDValidity(num)
-			}
+				s.Mailbox.SetPermanentFlags(permflags)
+				return false, nil
+			case imap.StatusResponseCodeUnseen, imap.StatusResponseCodeUIDNext, imap.StatusResponseCodeUIDValidity:
+				num, err := strconv.ParseUint(statusRespCodeFields[1].(string), 10, 64)
+				if err != nil {
+					log.Panic(err)
+				}
 
-			return false, nil
+				switch imap.StatusResponseCode(statusRespCode) {
+				case imap.StatusResponseCodeUnseen:
+					s.Mailbox.SetUnseen(num)
+				case imap.StatusResponseCodeUIDNext:
+					s.Mailbox.SetUIDNext(num)
+				case imap.StatusResponseCodeUIDValidity:
+					s.Mailbox.SetUIDValidity(num)
+				}
+
+				return false, nil
+			}
 		}
 
 		return false, imap.ErrUnhandled
@@ -66,10 +74,14 @@ func (s *Select) Handle(resp *Response) (bool, error) {
 	code := imap.DataResponseCode(resp.Fields[1].(string))
 	switch code {
 	case imap.DataResponseCodeFlags:
-		// flags := strings.Split(strings.Trim(resp.Fields[2], "()"), " ")
-		// if s.Mailbox != nil {
-		// 	s.Mailbox.SetFlags(flags)
-		// }
+		flags := make([]string, 0)
+		if f, ok := resp.Fields[2].([]interface{}); ok {
+			for _, flag := range f {
+				flags = append(flags, flag.(string))
+			}
+
+			s.Mailbox.SetFlags(flags)
+		}
 
 		return false, nil
 	}

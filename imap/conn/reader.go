@@ -28,6 +28,11 @@ func NewReader(r io.Reader) *Reader {
 	return reader
 }
 
+// readAtom reads until it finds a special character, and when it does
+// so, it returns the atom that precedes the special character and an
+// error indicating it found a special character
+//
+// BODY is an atom, BODY[TEXT] is an atom, BODY[1.HEADER], is an atom
 func (reader *Reader) readAtom() (string, error) {
 	atom := ""
 	for {
@@ -53,6 +58,7 @@ func (reader *Reader) readAtom() (string, error) {
 	}
 }
 
+// readSpecialChar reads a single special character
 func (reader *Reader) readSpecialChar() (rune, error) {
 	r, _, err := reader.r.ReadRune()
 	if err != nil {
@@ -269,14 +275,12 @@ func (reader *Reader) read() (*response.Response, error) {
 		case rune(imap.SpecialCharacterStar), rune(imap.SpecialCharacterPlus):
 			resp.AddField(string(sp))
 		}
-	} else {
-		log.Panic(err)
 	}
 
+	var atom string
+	var sp rune
 	var err error
-	for err != io.EOF {
-		var atom string
-		var sp rune
+	for {
 		// this will read the next atom in the response. If the response is tagged,
 		// this would be
 		atom, err = reader.readAtom()
@@ -290,76 +294,74 @@ func (reader *Reader) read() (*response.Response, error) {
 				log.Panic(err)
 			}
 
-			if sp != rune(imap.SpecialCharacterSpace) {
-				switch sp {
-				case rune(imap.SpecialCharacterListStart):
-					// this is either a list or a regular info string
-					// that contains open and close parentheses such
-					// as (Ubuntu) or (0.001 + 0.000 s). We must be able
-					// to handle both cases.
-					//
-					// Only cases where this isn't the start of an actual
-					// list are when this is an OK, NO, BYE, or BAD status
-					// response.
-					status := imap.StatusResponse(resp.Fields[1].(string))
-					switch status {
-					case imap.StatusResponseBAD, imap.StatusResponseNO, imap.StatusResponseOK, imap.StatusResponseBYE, imap.StatusResponsePREAUTH:
-						str, err := reader.readAtom()
-						if err != nil && err != imap.ErrFoundSpecialChar {
-							log.Panic(err)
-						}
-
-						resp.AddField("(" + str)
-					default:
-						reader.r.UnreadRune()
-
-						list, err := reader.readList()
-						if err != nil {
-							log.Panic(err)
-						}
-
-						resp.AddField(list)
-					}
-				case rune(imap.SpecialCharacterOpenBracket):
-					// this a status response code, read and store
-					// code and rguments, then pass everything off
-					// to be handled later by the appropriate
-					// handler
-					statusRespCodeFields := make([]interface{}, 0)
-					for {
-						atom, err := reader.readAtom()
-						if err != nil {
-							return nil, err
-						}
-
-						statusRespCodeFields = append(statusRespCodeFields, atom)
-						sp, err := reader.readSpecialChar()
-						if err != nil {
-							return nil, err
-						}
-
-						if sp == rune(imap.SpecialCharacterCloseBracket) {
-							resp.AddField(statusRespCodeFields)
-							break
-						}
-					}
-				case rune(imap.SpecialCharacterCR):
-					sp, err = reader.readSpecialChar()
-					if err == io.EOF {
-						break
+			switch sp {
+			case rune(imap.SpecialCharacterListStart):
+				// this is either a list or a regular info string
+				// that contains open and close parentheses such
+				// as (Ubuntu) or (0.001 + 0.000 s). We must be able
+				// to handle both cases.
+				//
+				// Only cases where this isn't the start of an actual
+				// list are when this is an OK, NO, BYE, or BAD status
+				// response.
+				status := imap.StatusResponse(resp.Fields[1].(string))
+				switch status {
+				case imap.StatusResponseBAD, imap.StatusResponseNO, imap.StatusResponseOK, imap.StatusResponseBYE, imap.StatusResponsePREAUTH:
+					str, err := reader.readAtom()
+					if err != nil && err != imap.ErrFoundSpecialChar {
+						log.Panic(err)
 					}
 
+					resp.AddField("(" + str)
+				default:
+					reader.r.UnreadRune()
+
+					list, err := reader.readList()
 					if err != nil {
 						log.Panic(err)
 					}
 
-					if sp != rune(imap.SpecialCharacterLF) {
-						log.Panic("expected \"\\n\", found " + string(sp))
+					resp.AddField(list)
+				}
+			case rune(imap.SpecialCharacterOpenBracket):
+				// this a status response code, read and store
+				// code and rguments, then pass everything off
+				// to be handled later by the appropriate
+				// handler
+				statusRespCodeFields := make([]interface{}, 0)
+				for {
+					atom, err := reader.readAtom()
+					if err != nil {
+						return nil, err
+					}
+
+					statusRespCodeFields = append(statusRespCodeFields, atom)
+					sp, err := reader.readSpecialChar()
+					if err != nil {
+						return nil, err
+					}
+
+					if sp == rune(imap.SpecialCharacterCloseBracket) {
+						resp.AddField(statusRespCodeFields)
+						break
 					}
 				}
+			case rune(imap.SpecialCharacterCR):
+				sp, err = reader.readSpecialChar()
+				if err == io.EOF {
+					break
+				}
+
+				if err != nil {
+					log.Panic(err)
+				}
+
+				if sp == rune(imap.SpecialCharacterLF) {
+					return resp, nil
+				}
+
+				log.Panic("expected \"\\n\", found " + string(sp))
 			}
 		}
 	}
-
-	return resp, nil
 }

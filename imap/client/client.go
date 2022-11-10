@@ -57,18 +57,16 @@ func (c *Client) waitForAndHandleGreeting() error {
 		return imap.ErrStatusNotOK
 	}
 
-	// if resp.Fields[2] == string(imap.SpecialCharacterOpenBracket) {
-	// 	code := imap.StatusResponseCode(resp.Fields[3].(string))
-	// 	fields := strings.Split(resp.Fields[4].(string), " ")
+	if statusRespCode, ok := resp.Fields[2].([]interface{}); ok {
+		code := statusRespCode[0].(string)
 
-	// 	switch code {
-	// 	case imap.StatusResponseCodeCapability:
-	// 		c.capabilities = make(map[string]bool)
-	// 		for _, cap := range fields[1:] {
-	// 			c.capabilities[cap] = true
-	// 		}
-	// 	}
-	// }
+		if code == string(imap.StatusResponseCodeCapability) && len(statusRespCode) > 1 {
+			c.capabilities = make(map[string]bool)
+			for _, arg := range statusRespCode[1:] {
+				c.capabilities[arg.(string)] = true
+			}
+		}
+	}
 
 	return nil
 }

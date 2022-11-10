@@ -13,10 +13,10 @@ func main() {
 	}
 	defer c.Logout()
 
-	// err = c.Login("mo@modsoussi.com", "alohomora")
-	// if err != nil {
-	// 	log.Panic(err)
-	// }
+	err = c.Login("mo@modsoussi.com", "alohomora")
+	if err != nil {
+		log.Panic(err)
+	}
 
 	// err = c.Select("inbox")
 	// if err != nil {

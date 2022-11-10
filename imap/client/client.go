@@ -289,12 +289,24 @@ func (c *Client) Mailbox() *imap.Mailbox {
 	return c.mbox
 }
 
-func (c *Client) Fetch(seqset *imap.SeqSet, m imap.FetchMacro) ([]*imap.Message, error) {
+func (c *Client) Fetch(seqset *imap.SeqSet, items []*imap.DataItem, m imap.FetchMacro) ([]*imap.Message, error) {
 	if c.state != imap.SelectedState {
 		return nil, imap.ErrNotSelected
 	}
 
-	cmd := command.NewCmdFetch(seqset, m)
+	cmd := command.NewCmdFetch(seqset)
+	if len(items) == 0 && string(m) == "" {
+		return nil, imap.ErrBadFetchMissingParams
+	}
+
+	if len(items) > 0 {
+		for _, item := range items {
+			cmd.AppendDataItem(item)
+		}
+	} else {
+		cmd.SetMacro(m)
+	}
+
 	handler := response.NewHandlerFetch(cmd.Tag)
 	defer close(handler.Done)
 

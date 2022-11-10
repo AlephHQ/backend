@@ -11,3 +11,6 @@ var ErrUnhandled = errors.New("unhandled response")
 // State Errors
 var ErrNotAuthenticated = errors.New("not authenticated")
 var ErrNotSelected = errors.New("not selected")
+
+// Fetch Errors
+var ErrBadFetchMissingParams = errors.New("bad FETCH: please provide either data items or a macro")

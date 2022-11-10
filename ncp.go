@@ -26,14 +26,40 @@ func main() {
 	log.Println(c.Mailbox())
 
 	messages, err := c.Fetch(
-		imap.NewSeqSet(c.Mailbox().Exists-4, c.Mailbox().Exists),
-		imap.FetchMacroAll,
+		imap.NewSeqSet(c.Mailbox().Exists, c.Mailbox().Exists),
+		[]*imap.DataItem{
+			{
+				Name: imap.DataItemNameEnvelope,
+			},
+			{
+				Name: imap.DataItemNameBody,
+			},
+		},
+		"",
 	)
 	if err != nil {
 		log.Panic(err)
 	}
 
 	for _, msg := range messages {
-		log.Printf("(%v) %s\n", msg.Envelope.From, msg.Envelope.Subject)
+		log.Printf("(%v) %s\n", msg.Envelope.From[0], msg.Envelope.Subject)
+
+		if len(msg.Body.Parts) > 0 {
+			msg, err := c.Fetch(
+				imap.NewSeqSet(c.Mailbox().Exists, c.Mailbox().Exists),
+				[]*imap.DataItem{
+					{
+						Name:    imap.DataItemNameBody,
+						Section: "1",
+					},
+				},
+				"",
+			)
+			if err != nil {
+				log.Panic(err)
+			}
+
+			log.Println(msg[0].Body.Sections["1"])
+		}
 	}
 }

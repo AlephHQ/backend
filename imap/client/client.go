@@ -125,22 +125,6 @@ func (c *Client) handleUnsolicitedResp(resp *response.Response) {
 	}
 }
 
-func (c *Client) readOne() (string, error) {
-	respRaw := ""
-	for {
-		r, _, err := c.conn.ReadRune()
-		if r == 0 || err == io.EOF {
-			return respRaw, nil
-		}
-
-		if err != nil {
-			return "", err
-		}
-
-		respRaw += string(r)
-	}
-}
-
 func (c *Client) setState(state imap.ConnectionState) {
 	c.slock.Lock()
 	c.state = state
@@ -168,6 +152,21 @@ func (c *Client) handle(resp *response.Response) error {
 	return imap.ErrUnhandled
 }
 
+func (c *Client) readOne() (string, error) {
+	respRaw := ""
+	for {
+		r, _, err := c.conn.ReadRune()
+		if err != nil {
+			log.Panic(err)
+		}
+
+		respRaw += string(r)
+		if r == rune(imap.SpecialCharacterLF) {
+			return respRaw, nil
+		}
+	}
+}
+
 func (c *Client) read() {
 	for {
 		respRaw, err := c.readOne()
@@ -176,7 +175,6 @@ func (c *Client) read() {
 		}
 
 		if respRaw != "" {
-			// log.Println(respRaw)
 			resp := response.Parse(respRaw)
 			if err := c.handle(resp); err == imap.ErrUnhandled {
 				c.handleUnsolicitedResp(resp)

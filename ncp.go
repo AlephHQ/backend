@@ -27,15 +27,8 @@ func main() {
 
 	messages, err := c.Fetch(
 		imap.NewSeqSet(c.Mailbox().Exists, c.Mailbox().Exists),
-		[]*imap.DataItem{
-			{
-				Name: imap.DataItemNameEnvelope,
-			},
-			{
-				Name: imap.DataItemNameBody,
-			},
-		},
-		"",
+		nil,
+		imap.FetchMacroFull,
 	)
 	if err != nil {
 		log.Panic(err)
@@ -50,7 +43,11 @@ func main() {
 				[]*imap.DataItem{
 					{
 						Name:    imap.DataItemNameBody,
-						Section: "2",
+						Section: imap.BodySectionHeader,
+					},
+					{
+						Name:    imap.DataItemNameBody,
+						Section: imap.BodySectionText,
 					},
 				},
 				"",
@@ -59,7 +56,7 @@ func main() {
 				log.Panic(err)
 			}
 
-			log.Println(msg[0].Body.Sections["2"])
+			log.Println(msg[0].Body)
 		}
 	}
 }

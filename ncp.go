@@ -56,7 +56,7 @@ func main() {
 				log.Panic(err)
 			}
 
-			log.Println(msg[0].Body)
+			log.Println(msg[0].Body.Sections[string(imap.BodySectionText)])
 		}
 	}
 }

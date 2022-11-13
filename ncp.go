@@ -39,7 +39,7 @@ func main() {
 
 		if len(msg.Body.Parts) > 0 {
 			msg, err := c.Fetch(
-				imap.NewSeqSet(c.Mailbox().Exists, c.Mailbox().Exists),
+				imap.NewSeqSet(c.Mailbox().Exists-c.Mailbox().Recent, c.Mailbox().Exists),
 				[]*imap.DataItem{
 					{
 						Name:    imap.DataItemNameBody,

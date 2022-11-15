@@ -340,3 +340,14 @@ func (c *Client) Search(items []*imap.SearchItem) ([]uint64, error) {
 
 	return handler.Results, nil
 }
+
+func (c *Client) Expunge() error {
+	if c.state != imap.SelectedState {
+		return imap.ErrNotSelected
+	}
+
+	cmd := command.NewCmdExpunge()
+	handler := response.NewHandlerExpunge(cmd.Tag)
+
+	return c.execute(cmd.Command(), handler)
+}

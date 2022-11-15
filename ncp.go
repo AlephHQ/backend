@@ -96,4 +96,9 @@ func main() {
 		log.Panic(err)
 	}
 	log.Printf("Results: %v\n", results)
+
+	err = c.Expunge()
+	if err != nil {
+		log.Panic(err)
+	}
 }

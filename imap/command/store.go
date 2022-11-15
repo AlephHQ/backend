@@ -8,12 +8,12 @@ import (
 
 type Store struct {
 	Tag          string
-	SeqSet       *imap.SeqSet
+	SeqSet       []imap.SeqSet
 	DataItemName imap.DataItemName
 	Values       []imap.Flag
 }
 
-func NewCmdStore(seqset *imap.SeqSet, name imap.DataItemName, values []imap.Flag) *Store {
+func NewCmdStore(seqset []imap.SeqSet, name imap.DataItemName, values []imap.Flag) *Store {
 	return &Store{
 		Tag:          getTag(),
 		SeqSet:       seqset,
@@ -28,5 +28,10 @@ func (s *Store) Command() string {
 		vals = append(vals, string(flag))
 	}
 
-	return fmt.Sprintf("%s STORE %v %v (%s)", s.Tag, s.SeqSet, s.DataItemName, strings.Join(vals, " "))
+	seqset := make([]string, 0)
+	for _, set := range s.SeqSet {
+		seqset = append(seqset, set.SeqSet())
+	}
+
+	return fmt.Sprintf("%s STORE %v %v (%s)", s.Tag, strings.Join(seqset, ","), s.DataItemName, strings.Join(vals, " "))
 }

@@ -99,10 +99,10 @@ func main() {
 	log.Printf("Results: %v\n", results)
 
 	// err = c.Store(
-	// 	&imap.SeqSet{
-	// 		{
-	// 			From: 1,
-	// 			To:   4,
+	// 	[]imap.SeqSet{
+	// 		&imap.SeqRange{
+	// 			From: 7,
+	// 			To:   10,
 	// 		},
 	// 	},
 	// 	imap.DataItemPlusFlag,

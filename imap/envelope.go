@@ -1,5 +1,7 @@
 package imap
 
+import "fmt"
+
 type Address struct {
 	Name         string
 	AtDomainList interface{}
@@ -13,6 +15,10 @@ func NewAddress(name, mailbox, host string) *Address {
 		Mailbox: mailbox,
 		Host:    host,
 	}
+}
+
+func (addr *Address) String() string {
+	return fmt.Sprintf("%s <%s@%s>", addr.Name, addr.Mailbox, addr.Host)
 }
 
 type Envelope struct {

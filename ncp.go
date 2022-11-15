@@ -97,8 +97,24 @@ func main() {
 	}
 	log.Printf("Results: %v\n", results)
 
-	err = c.Expunge()
-	if err != nil {
-		log.Panic(err)
-	}
+	// err = c.Store(
+	// 	&imap.SeqSet{
+	// 		{
+	// 			From: 1,
+	// 			To:   4,
+	// 		},
+	// 	},
+	// 	imap.DataItemPlusFlag,
+	// 	[]string{
+	// 		`\Deleted`,
+	// 	},
+	// )
+	// if err != nil {
+	// 	log.Panic(err)
+	// }
+
+	// err = c.Expunge()
+	// if err != nil {
+	// 	log.Panic(err)
+	// }
 }

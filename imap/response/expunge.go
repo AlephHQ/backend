@@ -19,10 +19,8 @@ func (e *Expunge) Handle(resp *Response) (bool, error) {
 	switch imap.StatusResponse(status) {
 	case imap.StatusResponseOK:
 		return e.Tag == resp.Fields[0].(string), nil
-	case imap.StatusResponseBAD:
-		return false, resp.Error()
-	case imap.StatusResponseNO:
-		return false, resp.Error()
+	case imap.StatusResponseBAD, imap.StatusResponseNO:
+		return true, resp.Error()
 	}
 
 	return false, nil

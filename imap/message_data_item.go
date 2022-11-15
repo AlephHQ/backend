@@ -11,6 +11,9 @@ const (
 	DataItemNameRFC822Header DataItemName = "RFC822.HEADER"
 	DataItemNameUID          DataItemName = "UID"
 	DataItemNameFlags        DataItemName = "FLAGS"
+
+	DataItemPlusFlag  DataItemName = "+FLAGS"
+	DataItemMinusFlag DataItemName = "-FLAGS"
 )
 
 type BodySection string

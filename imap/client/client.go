@@ -351,3 +351,14 @@ func (c *Client) Expunge() error {
 
 	return c.execute(cmd.Command(), handler)
 }
+
+func (c *Client) Store(seqset *imap.SeqSet, name imap.DataItemName, values []string) error {
+	if c.state != imap.SelectedState {
+		return imap.ErrNotSelected
+	}
+
+	cmd := command.NewCmdStore(seqset, name, values)
+	handler := response.NewHandlerStore(cmd.Tag)
+
+	return c.execute(cmd.Command(), handler)
+}

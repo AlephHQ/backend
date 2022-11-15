@@ -102,7 +102,7 @@ func ParseMessage(resp *Response) (*imap.Message, error) {
 			flags := fields[i+1].([]interface{})
 			for _, f := range flags {
 				if flag, ok := f.(string); ok {
-					message.SetFlag(flag)
+					message.SetFlag(imap.Flag(flag))
 				} else {
 					return nil, ErrParse
 				}

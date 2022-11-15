@@ -26,9 +26,10 @@ func main() {
 	log.Println(c.Mailbox())
 
 	messages, err := c.Fetch(
-		&imap.SeqSet{
-			{
-				From: 1,
+		[]imap.SeqSet{
+			&imap.SeqNumber{Val: 1},
+			&imap.SeqRange{
+				From: 4,
 				To:   c.Mailbox().Exists,
 			},
 		},
@@ -105,8 +106,8 @@ func main() {
 	// 		},
 	// 	},
 	// 	imap.DataItemPlusFlag,
-	// 	[]string{
-	// 		`\Deleted`,
+	// 	[]imap.Flag{
+	// 		imap.FlagFlagged,
 	// 	},
 	// )
 	// if err != nil {

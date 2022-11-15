@@ -10,10 +10,10 @@ type Fetch struct {
 	Tag       string
 	DataItems []*imap.DataItem
 	Macro     imap.FetchMacro
-	SeqSet    *imap.SeqSet
+	SeqSet    []imap.SeqSet
 }
 
-func NewCmdFetch(seqset *imap.SeqSet) *Fetch {
+func NewCmdFetch(seqset []imap.SeqSet) *Fetch {
 	return &Fetch{
 		Tag:       getTag(),
 		SeqSet:    seqset,
@@ -34,8 +34,13 @@ func (f *Fetch) AppendDataItem(di *imap.DataItem) *Fetch {
 }
 
 func (f *Fetch) Command() string {
+	seqset := make([]string, 0)
+	for _, set := range f.SeqSet {
+		seqset = append(seqset, set.SeqSet())
+	}
+
 	if len(f.DataItems) == 0 {
-		return fmt.Sprintf("%s FETCH %s %s", f.Tag, f.SeqSet.String(), f.Macro)
+		return fmt.Sprintf("%s FETCH %s %s", f.Tag, strings.Join(seqset, ","), f.Macro)
 	}
 
 	items := make([]string, 0)
@@ -48,5 +53,5 @@ func (f *Fetch) Command() string {
 		items = append(items, name)
 	}
 
-	return fmt.Sprintf("%s FETCH %s (%s)", f.Tag, f.SeqSet.String(), strings.Join(items, " "))
+	return fmt.Sprintf("%s FETCH %s (%s)", f.Tag, strings.Join(seqset, ","), strings.Join(items, " "))
 }

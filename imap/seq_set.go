@@ -3,32 +3,29 @@ package imap
 import (
 	"fmt"
 	"strconv"
-	"strings"
 )
+
+type SeqSet interface {
+	SeqSet() string
+}
 
 type SeqRange struct {
 	From uint64
 	To   uint64
 }
 
-type SeqSet []SeqRange
+func (sr *SeqRange) SeqSet() string {
+	return fmt.Sprintf(
+		"%s:%s",
+		strconv.FormatUint(sr.From, 10),
+		strconv.FormatUint(sr.To, 10),
+	)
+}
 
-func (seqset *SeqSet) String() string {
-	sets := make([]string, 0)
-	for _, seq := range *seqset {
-		if seq.From == seq.To {
-			sets = append(sets, strconv.FormatUint(seq.From, 10))
-		} else {
-			sets = append(
-				sets,
-				fmt.Sprintf(
-					"%s:%s",
-					strconv.FormatUint(seq.From, 10),
-					strconv.FormatUint(seq.To, 10),
-				),
-			)
-		}
-	}
+type SeqNumber struct {
+	Val uint64
+}
 
-	return strings.Join(sets, ",")
+func (sn *SeqNumber) SeqSet() string {
+	return strconv.FormatUint(sn.Val, 10)
 }

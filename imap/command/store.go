@@ -10,10 +10,10 @@ type Store struct {
 	Tag          string
 	SeqSet       *imap.SeqSet
 	DataItemName imap.DataItemName
-	Values       []string
+	Values       []imap.Flag
 }
 
-func NewCmdStore(seqset *imap.SeqSet, name imap.DataItemName, values []string) *Store {
+func NewCmdStore(seqset *imap.SeqSet, name imap.DataItemName, values []imap.Flag) *Store {
 	return &Store{
 		Tag:          getTag(),
 		SeqSet:       seqset,
@@ -23,5 +23,10 @@ func NewCmdStore(seqset *imap.SeqSet, name imap.DataItemName, values []string) *
 }
 
 func (s *Store) Command() string {
-	return fmt.Sprintf("%s STORE %v %v (%s)", s.Tag, s.SeqSet, s.DataItemName, strings.Join(s.Values, " "))
+	vals := make([]string, 0)
+	for _, flag := range s.Values {
+		vals = append(vals, string(flag))
+	}
+
+	return fmt.Sprintf("%s STORE %v %v (%s)", s.Tag, s.SeqSet, s.DataItemName, strings.Join(vals, " "))
 }

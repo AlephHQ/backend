@@ -5,7 +5,7 @@ type Message struct {
 
 	SeqNum uint64
 
-	Flags map[string]bool
+	Flags map[Flag]bool
 
 	InternalDate string
 
@@ -19,7 +19,7 @@ type Message struct {
 func NewMessage(seqnum uint64) *Message {
 	return &Message{
 		SeqNum: seqnum,
-		Flags:  make(map[string]bool),
+		Flags:  make(map[Flag]bool),
 	}
 }
 
@@ -29,7 +29,7 @@ func (m *Message) SetSeqNum(seqnum uint64) *Message {
 	return m
 }
 
-func (m *Message) SetFlag(flag string) *Message {
+func (m *Message) SetFlag(flag Flag) *Message {
 	m.Flags[flag] = true
 
 	return m

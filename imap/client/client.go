@@ -289,7 +289,7 @@ func (c *Client) Mailbox() *imap.Mailbox {
 	return c.mbox
 }
 
-func (c *Client) Fetch(seqset *imap.SeqSet, items []*imap.DataItem, m imap.FetchMacro) ([]*imap.Message, error) {
+func (c *Client) Fetch(seqset []imap.SeqSet, items []*imap.DataItem, m imap.FetchMacro) ([]*imap.Message, error) {
 	if c.state != imap.SelectedState {
 		return nil, imap.ErrNotSelected
 	}
@@ -352,7 +352,7 @@ func (c *Client) Expunge() error {
 	return c.execute(cmd.Command(), handler)
 }
 
-func (c *Client) Store(seqset *imap.SeqSet, name imap.DataItemName, values []string) error {
+func (c *Client) Store(seqset *imap.SeqSet, name imap.DataItemName, values []imap.Flag) error {
 	if c.state != imap.SelectedState {
 		return imap.ErrNotSelected
 	}

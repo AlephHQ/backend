@@ -28,19 +28,33 @@ func main() {
 	messages, err := c.Fetch(
 		&imap.SeqSet{
 			{
-				From: c.Mailbox().Exists - 1,
+				From: 1,
 				To:   c.Mailbox().Exists,
 			},
 		},
-		nil,
-		imap.FetchMacroAll,
+		[]*imap.DataItem{
+			{
+				Name: imap.DataItemNameEnvelope,
+			},
+			{
+				Name: imap.DataItemNameUID,
+			},
+			{
+				Name: imap.DataItemNameFlags,
+			},
+		},
+		"",
 	)
 	if err != nil {
 		log.Panic(err)
 	}
 
 	for _, msg := range messages {
-		log.Printf("%v %s\n", msg.Envelope.From[0], msg.Envelope.Subject)
+		if len(msg.Envelope.From) > 0 {
+			log.Printf("* %d: %v %s %v %d\n", msg.SeqNum, msg.Envelope.From[0], msg.Envelope.Subject, msg.Flags, msg.UID)
+		} else {
+			log.Printf("No Sender: %s", msg.Envelope.Subject)
+		}
 
 		// if len(msg.Body.Parts) > 0 {
 		// 	msg, err := c.Fetch(

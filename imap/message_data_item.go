@@ -9,6 +9,8 @@ const (
 	DataItemNameRFC822Size   DataItemName = "RFC822.SIZE"
 	DataItemNameEnvelope     DataItemName = "ENVELOPE"
 	DataItemNameRFC822Header DataItemName = "RFC822.HEADER"
+	DataItemNameUID          DataItemName = "UID"
+	DataItemNameFlags        DataItemName = "FLAGS"
 )
 
 type BodySection string

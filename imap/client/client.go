@@ -71,7 +71,6 @@ func (c *Client) waitForAndHandleGreeting() error {
 func (c *Client) execute(cmd string, handler response.Handler) error {
 	tag := getTag()
 	done := make(chan Handled)
-	log.Println(cmd)
 	handlerFunc := response.NewHandlerFunc(func(resp *response.Response) (bool, error) {
 		unregister, err := handler.Handle(resp)
 		done <- Handled{Unregister: unregister, Err: err}

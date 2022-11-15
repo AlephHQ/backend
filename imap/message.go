@@ -16,10 +16,10 @@ type Message struct {
 	Body *Body
 }
 
-func NewMessage(uid uint64) *Message {
+func NewMessage(seqnum uint64) *Message {
 	return &Message{
-		UID:   uid,
-		Flags: make(map[string]bool),
+		SeqNum: seqnum,
+		Flags:  make(map[string]bool),
 	}
 }
 
@@ -55,6 +55,12 @@ func (m *Message) SetEnvelope(e *Envelope) *Message {
 
 func (m *Message) SetBody(b *Body) *Message {
 	m.Body = b
+
+	return m
+}
+
+func (m *Message) SetUID(uid uint64) *Message {
+	m.UID = uid
 
 	return m
 }

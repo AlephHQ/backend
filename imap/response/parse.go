@@ -82,11 +82,11 @@ func getBodyPart(fields []interface{}) *imap.BodyStructure {
 }
 
 func ParseMessage(resp *Response) (*imap.Message, error) {
-	uid, err := strconv.ParseUint(resp.Fields[1].(string), 10, 64)
+	seqnum, err := strconv.ParseUint(resp.Fields[1].(string), 10, 64)
 	if err != nil {
 		return nil, err
 	}
-	message := imap.NewMessage(uid)
+	message := imap.NewMessage(seqnum)
 
 	fields := resp.Fields[3].([]interface{})
 	i := 0
@@ -220,6 +220,11 @@ func ParseMessage(resp *Response) (*imap.Message, error) {
 			}
 
 			message.SetBody(body)
+			i += 2
+		case imap.MessageAttributeUID:
+			if uid, ok := fields[i+1].(uint64); ok {
+				message.SetUID(uid)
+			}
 			i += 2
 		}
 	}

@@ -26,7 +26,12 @@ func main() {
 	log.Println(c.Mailbox())
 
 	messages, err := c.Fetch(
-		imap.NewSeqSet(c.Mailbox().Exists, c.Mailbox().Exists),
+		&imap.SeqSet{
+			{
+				From: c.Mailbox().Exists - 1,
+				To:   c.Mailbox().Exists,
+			},
+		},
 		nil,
 		imap.FetchMacroFull,
 	)
@@ -39,7 +44,12 @@ func main() {
 
 		if len(msg.Body.Parts) > 0 {
 			msg, err := c.Fetch(
-				imap.NewSeqSet(c.Mailbox().Exists-c.Mailbox().Recent, c.Mailbox().Exists),
+				&imap.SeqSet{
+					{
+						From: msg.UID,
+						To:   msg.UID,
+					},
+				},
 				[]*imap.DataItem{
 					{
 						Name:    imap.DataItemNameBody,
@@ -59,4 +69,17 @@ func main() {
 			log.Println(msg[0].Body.Sections[string(imap.BodySectionText)])
 		}
 	}
+
+	results, err := c.Search(
+		[]*imap.SearchItem{
+			{
+				Key: imap.SearchKeyText,
+				Val: "astro",
+			},
+		},
+	)
+	if err != nil {
+		log.Panic(err)
+	}
+	log.Printf("Results: %v\n", results)
 }

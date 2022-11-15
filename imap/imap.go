@@ -51,10 +51,11 @@ const (
 	DataResponseCodeRecent DataResponseCode = "RECENT"
 )
 
-type MessageStatusResponseCode string
+type ResponseCode string
 
 const (
-	MessageStatusResponseCodeFetch MessageStatusResponseCode = "FETCH"
+	ResponseCodeFetch  ResponseCode = "FETCH"
+	ResponseCodeSearch ResponseCode = "SEARCH"
 )
 
 type MessageAttribute string

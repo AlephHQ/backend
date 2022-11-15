@@ -71,6 +71,7 @@ func (c *Client) waitForAndHandleGreeting() error {
 func (c *Client) execute(cmd string, handler response.Handler) error {
 	tag := getTag()
 	done := make(chan Handled)
+	log.Println(cmd)
 	handlerFunc := response.NewHandlerFunc(func(resp *response.Response) (bool, error) {
 		unregister, err := handler.Handle(resp)
 		done <- Handled{Unregister: unregister, Err: err}
@@ -312,10 +313,31 @@ func (c *Client) Fetch(seqset *imap.SeqSet, items []*imap.DataItem, m imap.Fetch
 
 	err := c.execute(cmd.Command(), handler)
 	if err != nil {
-		log.Panic(err)
+		return nil, err
 	}
 
 	<-handler.Done
 	log.Printf("Received %d messages.\n", len(handler.Messages))
 	return handler.Messages, nil
+}
+
+func (c *Client) Search(items []*imap.SearchItem) ([]uint64, error) {
+	if c.state != imap.SelectedState {
+		return nil, imap.ErrNotSelected
+	}
+
+	cmd := command.NewCmdSearch()
+	if len(items) > 0 {
+		for _, item := range items {
+			cmd.AddSearchItem(item)
+		}
+	}
+
+	handler := response.NewHandlerSearch(cmd.Tag)
+	err := c.execute(cmd.Command(), handler)
+	if err != nil {
+		return nil, err
+	}
+
+	return handler.Results, nil
 }

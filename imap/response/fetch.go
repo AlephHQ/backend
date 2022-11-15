@@ -27,13 +27,13 @@ func (f *Fetch) Handle(resp *Response) (bool, error) {
 		go func() { f.Done <- true }() // go channels are so damn cool
 		return true, nil
 	case imap.StatusResponseNO:
-		return true, fmt.Errorf("FETCH error: %s" /* strings.Join(resp.Fields[2:], " ") */, "error")
+		return true, fmt.Errorf("FETCH error: %s", resp.Error())
 	case imap.StatusResponseBAD:
-		return true, fmt.Errorf("FETCH error: %s" /* strings.Join(resp.Fields[2:], " ") */, "error")
+		return true, fmt.Errorf("FETCH error: %s", resp.Error())
 	}
 
-	msgStatusRespCode := imap.MessageStatusResponseCode(resp.Fields[2].(string))
-	if msgStatusRespCode == imap.MessageStatusResponseCodeFetch {
+	msgStatusRespCode := imap.ResponseCode(resp.Fields[2].(string))
+	if msgStatusRespCode == imap.ResponseCodeFetch {
 		msg, err := ParseMessage(resp)
 		if err != nil {
 			log.Panic(err)

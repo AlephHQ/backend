@@ -34,5 +34,5 @@ func (s *Search) Handle(resp *Response) (bool, error) {
 		return false, nil
 	}
 
-	return false, nil
+	return false, imap.ErrUnhandled
 }

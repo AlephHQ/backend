@@ -362,3 +362,14 @@ func (c *Client) Store(seqset []imap.SeqSet, name imap.DataItemName, values []im
 
 	return c.execute(cmd.Command(), handler)
 }
+
+func (c *Client) Create(name string) error {
+	if c.state != imap.AuthenticatedState {
+		return imap.ErrNotAuthenticated
+	}
+
+	cmd := command.NewCmdCreate(name)
+	handler := response.NewHandlerCreate(cmd.Tag)
+
+	return c.execute(cmd.Command(), handler)
+}

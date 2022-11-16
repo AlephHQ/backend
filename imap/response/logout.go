@@ -24,5 +24,5 @@ func (l *Logout) Handle(resp *Response) (bool, error) {
 		}
 	}
 
-	return false, nil
+	return false, imap.ErrUnhandled
 }

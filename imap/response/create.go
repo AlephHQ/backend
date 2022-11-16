@@ -2,22 +2,21 @@ package response
 
 import "ncp/backend/imap"
 
-type Store struct {
+type Create struct {
 	Tag string
 }
 
-func NewHandlerStore(tag string) *Store {
-	return &Store{
+func NewHandlerCreate(tag string) *Create {
+	return &Create{
 		Tag: tag,
 	}
 }
 
-func (s *Store) Handle(resp *Response) (bool, error) {
+func (c *Create) Handle(resp *Response) (bool, error) {
 	status := imap.StatusResponse(resp.Fields[1].(string))
-
 	switch status {
 	case imap.StatusResponseOK:
-		return s.Tag == resp.Fields[0].(string), nil
+		return c.Tag == resp.Fields[0].(string), nil
 	case imap.StatusResponseBAD, imap.StatusResponseNO:
 		return true, resp.Error()
 	}

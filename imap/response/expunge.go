@@ -23,5 +23,5 @@ func (e *Expunge) Handle(resp *Response) (bool, error) {
 		return true, resp.Error()
 	}
 
-	return false, nil
+	return false, imap.ErrUnhandled
 }

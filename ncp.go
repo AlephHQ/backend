@@ -52,7 +52,7 @@ func main() {
 
 	for _, msg := range messages {
 		if len(msg.Envelope.From) > 0 {
-			log.Printf("* %d: %v %s %v %d\n", msg.SeqNum, msg.Envelope.From[0], msg.Envelope.Subject, msg.Flags, msg.UID)
+			log.Printf("* %d: %v %s %v UID:%d\n", msg.SeqNum, msg.Envelope.From[0], msg.Envelope.Subject, msg.Flags, msg.UID)
 		} else {
 			log.Printf("No Sender: %s", msg.Envelope.Subject)
 		}

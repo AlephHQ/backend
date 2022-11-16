@@ -373,3 +373,14 @@ func (c *Client) Create(name string) error {
 
 	return c.execute(cmd.Command(), handler)
 }
+
+func (c *Client) Delete(name string) error {
+	if c.state != imap.AuthenticatedState {
+		return imap.ErrNotAuthenticated
+	}
+
+	cmd := command.NewCmdDelete(name)
+	handler := response.NewHandlerDelete(cmd.Tag)
+
+	return c.execute(cmd.Command(), handler)
+}

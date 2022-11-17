@@ -3,8 +3,8 @@ package imap
 type Mailbox struct {
 	Name string
 
-	Flags          []Flag
-	PermanentFlags []Flag
+	Flags          map[Flag]bool
+	PermanentFlags map[Flag]bool
 
 	Exists uint64
 
@@ -30,18 +30,18 @@ func (mbs *Mailbox) SetName(name string) *Mailbox {
 }
 
 func (mbs *Mailbox) SetFlags(flags []string) *Mailbox {
-	mbs.Flags = make([]Flag, 0)
+	mbs.Flags = make(map[Flag]bool)
 	for _, f := range flags {
-		mbs.Flags = append(mbs.Flags, Flag(f))
+		mbs.Flags[Flag(f)] = true
 	}
 
 	return mbs
 }
 
 func (mbs *Mailbox) SetPermanentFlags(pflags []string) *Mailbox {
-	mbs.PermanentFlags = make([]Flag, 0)
+	mbs.PermanentFlags = make(map[Flag]bool)
 	for _, f := range pflags {
-		mbs.PermanentFlags = append(mbs.PermanentFlags, Flag(f))
+		mbs.PermanentFlags[Flag(f)] = true
 	}
 
 	return mbs

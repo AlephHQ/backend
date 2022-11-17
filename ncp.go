@@ -107,7 +107,7 @@ func main() {
 	// 	},
 	// 	imap.DataItemPlusFlag,
 	// 	[]imap.Flag{
-	// 		imap.FlagFlagged,
+	// 		imap.Flag(`Physics`),
 	// 	},
 	// )
 	// if err != nil {

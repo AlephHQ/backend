@@ -107,8 +107,11 @@ func (c *Client) handleUnsolicitedResp(resp *response.Response) {
 
 	status := imap.StatusResponse(resp.Fields[1].(string))
 	switch status {
-	case imap.StatusResponseBAD, imap.StatusResponseBYE, imap.StatusResponseNO:
+	case imap.StatusResponseBAD, imap.StatusResponseNO:
 		log.Println(resp.Raw)
+		return
+	case imap.StatusResponseBYE:
+		log.Println("BYE!")
 		return
 	case imap.StatusResponseOK:
 		if resp.Fields[2] == string(imap.SpecialCharacterOpenBracket) {

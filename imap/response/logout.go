@@ -1,7 +1,6 @@
 package response
 
 import (
-	"errors"
 	"ncp/backend/imap"
 )
 
@@ -19,8 +18,8 @@ func (l *Logout) Handle(resp *Response) (bool, error) {
 		switch status {
 		case imap.StatusResponseOK:
 			return l.Tag == resp.Fields[0].(string), nil
-		case imap.StatusResponseBAD:
-			return true, errors.New("logout error")
+		case imap.StatusResponseBAD, imap.StatusResponseNO:
+			return true, resp.Error()
 		}
 	}
 

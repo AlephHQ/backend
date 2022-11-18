@@ -45,7 +45,7 @@ func (reader *IMAPReader) readAtom() (string, error) {
 	}
 
 	atom := string(r)
-	foundOpenBracket := false // this is to handle BODY[...] cases
+	foundOpen := false // this is to handle BODY[...] cases
 	for {
 		r, _, err = reader.r.ReadRune()
 		if err != nil {
@@ -53,13 +53,13 @@ func (reader *IMAPReader) readAtom() (string, error) {
 		}
 
 		switch imap.SpecialCharacter(r) {
-		case imap.SpecialCharacterSpace, imap.SpecialCharacterCR, imap.SpecialCharacterCloseParen:
+		case imap.SpecialCharacterSpace, imap.SpecialCharacterCR:
 			reader.r.UnreadRune()
 			return atom, nil
-		case imap.SpecialCharacterOpenBracket:
-			foundOpenBracket = true
-		case imap.SpecialCharacterCloseBracket:
-			if !foundOpenBracket {
+		case imap.SpecialCharacterOpenBracket, imap.SpecialCharacterOpenParen:
+			foundOpen = true
+		case imap.SpecialCharacterCloseBracket, imap.SpecialCharacterCloseParen:
+			if !foundOpen {
 				reader.r.UnreadRune()
 				return atom, nil
 			}

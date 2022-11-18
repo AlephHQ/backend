@@ -29,7 +29,9 @@ func (resp *Response) AddField(field interface{}) {
 func (resp *Response) Error() error {
 	err := make([]string, 0)
 	for _, word := range resp.Fields[2:] {
-		err = append(err, word.(string))
+		if w, ok := word.(string); ok {
+			err = append(err, w)
+		}
 	}
 
 	return errors.New(strings.Join(err, " "))

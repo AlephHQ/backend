@@ -1,7 +1,6 @@
 package response
 
 import (
-	"errors"
 	"ncp/backend/imap"
 )
 
@@ -21,8 +20,8 @@ func (l *Login) Handle(resp *Response) (bool, error) {
 	if l.Tag == resp.Fields[0].(string) {
 		status := imap.StatusResponse(resp.Fields[1].(string))
 		switch status {
-		case imap.StatusResponseNO:
-			return true, errors.New( /* strings.Join(resp.Fields[5:], " ") */ "error")
+		case imap.StatusResponseNO, imap.StatusResponseBAD:
+			return true, resp.Error()
 		case imap.StatusResponseOK:
 			if statusRespCode, ok := resp.Fields[2].([]interface{}); ok {
 				code := statusRespCode[0].(string)
@@ -36,8 +35,6 @@ func (l *Login) Handle(resp *Response) (bool, error) {
 			}
 
 			return true, nil
-		case imap.StatusResponseBAD:
-			return true, errors.New( /* strings.Join(resp.Fields[1:], " ") */ "error")
 		}
 	}
 

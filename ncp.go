@@ -2,12 +2,14 @@ package main
 
 import (
 	"log"
+	"net/http"
 
+	"ncp/backend/api"
 	"ncp/backend/imap"
 	"ncp/backend/imap/client"
 )
 
-func main() {
+func runIMAP() {
 	c, err := client.DialWithTLS("tcp", "modsoussi.com:993")
 	if err != nil {
 		log.Panic(err)
@@ -118,4 +120,15 @@ func main() {
 	// if err != nil {
 	// 	log.Panic(err)
 	// }
+}
+
+func main() {
+	s := &http.Server{
+		Addr:    ":7001",
+		Handler: api.NewAPIMux(),
+	}
+
+	if err := s.ListenAndServe(); err != nil {
+		log.Panic(err)
+	}
 }

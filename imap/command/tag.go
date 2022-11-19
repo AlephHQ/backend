@@ -1,17 +1,7 @@
 package command
 
-import (
-	"crypto/rand"
-	"encoding/base64"
-	"log"
-)
+import "ncp/backend/utils"
 
 func getTag() string {
-	b := make([]byte, 7)
-	_, err := rand.Read(b)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	return base64.RawURLEncoding.EncodeToString(b)
+	return utils.RandStr(7)
 }

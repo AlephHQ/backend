@@ -12,7 +12,7 @@ type EmailAddress struct {
 	Primary bool   `bson:"primary" json:"primary"`
 }
 
-type User struct {
+type user struct {
 	ID               primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 	Name             string             `bson:"name" json:"name"`
 	FirstName        string             `bson:"first_name" json:"first_name"`
@@ -20,12 +20,12 @@ type User struct {
 	EmailAddresses   []EmailAddress     `bson:"email_addresses" json:"email_addresses"`
 	CreatedAt        time.Time          `bson:"created_at" json:"created_at"`
 	Username         string             `bson:"username" json:"username"`
-	Password         string             `bson:"password"`
-	InternalPassword string             `bson:"internal_password"`
+	Password         string             `bson:"password" json:"omitempty"`
+	InternalPassword string             `bson:"internal_password" json:"omitempty"`
 }
 
-func (u *User) JSON() string {
-	marshal := &User{
+func (u *user) JSON() string {
+	marshal := &user{
 		ID:             u.ID,
 		Name:           u.Name,
 		FirstName:      u.FirstName,

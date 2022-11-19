@@ -2,33 +2,53 @@ package auth
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"ncp/backend/api/mongo"
+	"ncp/backend/env"
 	"ncp/backend/utils"
 	"net/http"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
-type AuthHandler struct{}
+type HandlerAuth struct{}
 
-func NewHandlerAuth() *AuthHandler {
-	return &AuthHandler{}
+func NewHandlerAuth() *HandlerAuth {
+	return &HandlerAuth{}
 }
 
-func signup(email, password string) (*User, error) {
+func insertNewUserInMailAuthTable(u *user) error {
+	db, err := sql.Open("mysql", env.MySQLURI())
+	if err != nil {
+		return err
+	}
+
+	defer db.Close()
+
+	hash, _ := bcrypt.GenerateFromPassword([]byte(u.InternalPassword), bcrypt.MinCost)
+	sql := fmt.Sprintf("INSERT INTO users (username, password) VALUES ('%s', '%s')", u.Username, hash)
+	_, err = db.Exec(sql)
+	return err
+}
+
+func signup(email, password string) (*user, error) {
 	hash, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
 
-	user := &User{
+	user := &user{
 		EmailAddresses: []EmailAddress{
 			{Addr: email, Primary: true},
 		},
 		Password:         string(hash),
 		InternalPassword: utils.RandStr(12),
 		Username:         utils.RandStr(10),
+		CreatedAt:        time.Now(),
 	}
 
 	result, err := mongo.AuthCollection().InsertOne(
@@ -42,10 +62,20 @@ func signup(email, password string) (*User, error) {
 
 	user.ID = result.InsertedID.(primitive.ObjectID)
 
+	err = insertNewUserInMailAuthTable(user)
+	if err != nil {
+		_, derr := mongo.AuthCollection().DeleteOne(context.Background(), bson.D{{"_id", user.ID}})
+		if derr != nil {
+			return nil, derr
+		}
+
+		return nil, err
+	}
+
 	return user, nil
 }
 
-func (h *AuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *HandlerAuth) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	switch r.Method {
@@ -58,8 +88,7 @@ func (h *AuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		switch action {
 		case "signin":
-
-			user := &User{}
+			user := &user{}
 			err := mongo.AuthCollection().FindOne(
 				context.Background(),
 				bson.D{

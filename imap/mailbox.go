@@ -1,22 +1,22 @@
 package imap
 
 type Mailbox struct {
-	Name string
+	Name string `json:"name"`
 
-	Flags          map[Flag]bool
-	PermanentFlags map[Flag]bool
+	Flags          map[Flag]bool `json:"flags"`
+	PermanentFlags map[Flag]bool `json:"permament_flags"`
 
-	Exists uint64
+	Exists uint64 `json:"exists"`
 
-	Recent uint64
+	Recent uint64 `json:"recent"`
 
-	Unseen uint64
+	Unseen uint64 `json:"unseen"`
 
-	UIDValidity uint64
+	UIDValidity uint64 `json:"uid_validity"`
 
-	UIDNext uint64
+	UIDNext uint64 `json:"uid_next"`
 
-	ReadOnly bool
+	ReadOnly bool `json:"read_only"`
 }
 
 func NewMailbox() *Mailbox {

@@ -15,7 +15,7 @@ func NewAPIMux() *Mux {
 		ServeMux: http.NewServeMux(),
 	}
 
-	mux.Handle("/v1.0/auth/", auth.NewHandlerAuth())
+	mux.Handle("/v1.0/auth", auth.NewHandlerAuth())
 
 	return mux
 }

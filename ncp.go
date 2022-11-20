@@ -4,7 +4,8 @@ import (
 	"log"
 	"net/http"
 
-	"ncp/backend/api"
+	"ncp/backend/api/auth"
+	"ncp/backend/api/inbox"
 	"ncp/backend/imap"
 	"ncp/backend/imap/client"
 )
@@ -123,9 +124,13 @@ func runIMAP() {
 }
 
 func main() {
+	mux := http.NewServeMux()
+	mux.Handle("/v1.0/auth", auth.NewHandlerAuth())
+	mux.Handle("/v1.0/inbox", inbox.NewHandlerInbox())
+
 	s := &http.Server{
 		Addr:    ":7001",
-		Handler: api.NewAPIMux(),
+		Handler: mux,
 	}
 
 	if err := s.ListenAndServe(); err != nil {

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"ncp/backend/api"
 	"ncp/backend/api/mongo"
 	"ncp/backend/env"
 	"ncp/backend/utils"
@@ -24,7 +25,7 @@ func NewHandlerAuth() *HandlerAuth {
 	return &HandlerAuth{}
 }
 
-func insertNewUserInMailAuthTable(u *user) error {
+func insertNewUserInMailAuthTable(u *api.User) error {
 	db, err := sql.Open("mysql", env.MySQLURI())
 	if err != nil {
 		return err
@@ -38,11 +39,11 @@ func insertNewUserInMailAuthTable(u *user) error {
 	return err
 }
 
-func signup(email, password string) (*user, error) {
+func signup(email, password string) (*api.User, error) {
 	hash, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
 
-	user := &user{
-		EmailAddresses: []EmailAddress{
+	user := &api.User{
+		EmailAddresses: []api.EmailAddress{
 			{Addr: email, Primary: true},
 		},
 		Password:         string(hash),
@@ -88,7 +89,7 @@ func (h *HandlerAuth) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		switch action {
 		case "signin":
-			user := &user{}
+			user := &api.User{}
 			err := mongo.AuthCollection().FindOne(
 				context.Background(),
 				bson.D{

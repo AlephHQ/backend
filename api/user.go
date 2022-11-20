@@ -1,4 +1,4 @@
-package auth
+package api
 
 import (
 	"encoding/json"
@@ -12,7 +12,7 @@ type EmailAddress struct {
 	Primary bool   `bson:"primary" json:"primary"`
 }
 
-type user struct {
+type User struct {
 	ID               primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 	Name             string             `bson:"name" json:"name"`
 	FirstName        string             `bson:"first_name" json:"first_name"`
@@ -24,8 +24,8 @@ type user struct {
 	InternalPassword string             `bson:"internal_password" json:"omitempty"`
 }
 
-func (u *user) JSON() string {
-	marshal := &user{
+func (u *User) JSON() string {
+	marshal := &User{
 		ID:             u.ID,
 		Name:           u.Name,
 		FirstName:      u.FirstName,

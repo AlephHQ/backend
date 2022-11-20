@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"ncp/backend/api"
 	"ncp/backend/api/mongo"
 	"ncp/backend/imap/client"
 	"net/http"
@@ -28,7 +29,7 @@ func (HandlerInbox) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		user := &user{}
+		user := &api.User{}
 		uoid, err := primitive.ObjectIDFromHex(userID)
 		if err != nil {
 			http.Error(w, "invalid user_id param", http.StatusBadRequest)

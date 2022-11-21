@@ -125,8 +125,8 @@ func runIMAP() {
 
 func main() {
 	mux := http.NewServeMux()
-	mux.Handle("/v1.0/auth", auth.NewHandlerAuth())
-	mux.Handle("/v1.0/inbox", inbox.NewHandlerInbox())
+	mux.Handle("/v1.0/auth", auth.NewHandler())
+	mux.Handle("/v1.0/inbox", inbox.NewHandler())
 
 	s := &http.Server{
 		Addr:    ":7001",

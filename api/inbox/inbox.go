@@ -14,13 +14,13 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type HandlerInbox struct{}
+type Handler struct{}
 
-func NewHandlerInbox() *HandlerInbox {
-	return &HandlerInbox{}
+func NewHandler() *Handler {
+	return &Handler{}
 }
 
-func (HandlerInbox) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		r.ParseForm()

@@ -20,10 +20,10 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-type HandlerAuth struct{}
+type Handler struct{}
 
-func NewHandlerAuth() *HandlerAuth {
-	return &HandlerAuth{}
+func NewHandler() *Handler {
+	return &Handler{}
 }
 
 func insertNewUserInMailAuthTable(u *api.User) error {
@@ -77,7 +77,7 @@ func signup(email, password string) (*api.User, error) {
 	return user, nil
 }
 
-func (h *HandlerAuth) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	switch r.Method {

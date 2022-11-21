@@ -111,7 +111,6 @@ func (c *Client) handleUnsolicitedResp(resp *response.Response) {
 		log.Println(resp.Raw)
 		return
 	case imap.StatusResponseBYE:
-		log.Println("BYE!")
 		return
 	case imap.StatusResponseOK:
 		if resp.Fields[2] == string(imap.SpecialCharacterOpenBracket) {
@@ -150,9 +149,13 @@ func (c *Client) handle(resp *response.Response) error {
 
 func (c *Client) read() {
 	for {
+		if c.state == imap.LogoutState {
+			return
+		}
+
 		resp, err := c.conn.Read()
 		if err != nil && err != io.EOF {
-			log.Println(err)
+			log.Panic(err)
 		}
 
 		if resp != nil {

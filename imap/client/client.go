@@ -297,6 +297,10 @@ func (c *Client) Fetch(seqset []imap.SeqSet, items []*imap.DataItem, m imap.Fetc
 		return nil, imap.ErrNotSelected
 	}
 
+	if len(seqset) == 0 {
+		return nil, nil
+	}
+
 	cmd := command.NewCmdFetch(seqset)
 	if len(items) == 0 && string(m) == "" {
 		return nil, imap.ErrBadFetchMissingParams

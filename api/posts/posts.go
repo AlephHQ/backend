@@ -78,8 +78,7 @@ func (Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			} else {
 				var from, to uint64
 				to = imapClient.Mailbox().Exists
-				from = to - 5
-				if from < 0 {
+				if to < 6 {
 					from = 0
 				}
 
@@ -89,8 +88,16 @@ func (Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		msgs, err := imapClient.Fetch(
 			seqset,
-			nil,
-			imap.FetchMacroFull,
+			[]*imap.DataItem{
+				{
+					Name: imap.DataItemNameEnvelope,
+				},
+				{
+					Name:    imap.DataItemNameBody,
+					Section: imap.BodySectionText,
+				},
+			},
+			"",
 		)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -326,7 +326,6 @@ func (c *Client) Fetch(seqset []imap.SeqSet, items []*imap.DataItem, m imap.Fetc
 	}
 
 	<-handler.Done
-	log.Printf("Received %d messages.\n", len(handler.Messages))
 	return handler.Messages, nil
 }
 

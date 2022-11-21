@@ -1,10 +1,11 @@
 package server
 
 import (
-	"ncp/backend/api/auth"
-	"ncp/backend/api/inbox"
-	"ncp/backend/api/posts"
 	"net/http"
+
+	"ncp/backend/api/handlers/auth"
+	"ncp/backend/api/handlers/inbox"
+	"ncp/backend/api/handlers/posts"
 )
 
 type Params struct {

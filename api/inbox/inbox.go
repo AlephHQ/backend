@@ -53,7 +53,7 @@ func (Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		defer imapClient.Logout()
 
-		err = imapClient.Login(user.Username, user.InternalPassword)
+		err = imapClient.Login(user.Username+"@modsoussi.com", user.InternalPassword)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

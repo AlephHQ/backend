@@ -59,7 +59,7 @@ func (Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		defer imapClient.Logout()
 
-		err = imapClient.Login(user.Username, user.InternalPassword)
+		err = imapClient.Login(user.Username+"@modsoussi.com", user.InternalPassword)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -90,7 +90,7 @@ func (Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		msgs, err := imapClient.Fetch(
 			seqset,
 			nil,
-			imap.FetchMacroAll,
+			imap.FetchMacroFull,
 		)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

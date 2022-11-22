@@ -37,6 +37,7 @@ type Post struct {
 	Subject      string             `json:"subject"`
 	Flags        map[imap.Flag]bool `json:"flags"`
 	Body         *Body              `json:"body"`
+	Preview      string             `json:"preview"`
 }
 
 func MessageToPost(msg *imap.Message) *Post {

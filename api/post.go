@@ -17,22 +17,25 @@ type BodyPart struct {
 	Encoding string            `json:"encoding"`
 	Size     uint64            `json:"size"`
 	Params   map[string]string `json:"params"`
+	Content  string            `json:"content"`
 }
 
 type Body struct {
 	Parts []*BodyPart `json:"parts"`
-	Text  string      `json:"text"`
+	Full  string      `json:"full"`
 }
 
 type Post struct {
-	UID       uint64     `json:"uid"`
-	SeqNum    uint64     `json:"seq_num"`
-	From      []*Address `json:"from"`
-	Sender    []*Address `json:"sender"`
-	To        []*Address `json:"to"`
-	MessageID string     `json:"message_id"`
-	Subject   string     `json:"subject"`
-	Body      *Body      `json:"body"`
+	UID          uint64             `json:"uid"`
+	SeqNum       uint64             `json:"seq_num"`
+	InternalDate string             `json:"internal_date"`
+	From         []*Address         `json:"from"`
+	Sender       []*Address         `json:"sender"`
+	To           []*Address         `json:"to"`
+	MessageID    string             `json:"message_id"`
+	Subject      string             `json:"subject"`
+	Flags        map[imap.Flag]bool `json:"flags"`
+	Body         *Body              `json:"body"`
 }
 
 func MessageToPost(msg *imap.Message) *Post {
@@ -88,25 +91,28 @@ func MessageToPost(msg *imap.Message) *Post {
 		}
 	}
 
+	post.InternalDate = msg.InternalDate
+	post.Flags = msg.Flags
+
 	if msg.Body != nil {
 		post.Body = &Body{
 			Parts: make([]*BodyPart, 0),
 		}
 
-		for _, part := range msg.Body.Parts {
+		for _, p := range msg.Body.Parts {
+			part := &BodyPart{
+				Type:     p.Type,
+				Subtype:  p.Subtype,
+				Encoding: p.Encoding,
+				Size:     p.Size,
+				Params:   p.ParameterList,
+			}
+
 			post.Body.Parts = append(
 				post.Body.Parts,
-				&BodyPart{
-					Type:     part.Type,
-					Subtype:  part.Subtype,
-					Encoding: part.Encoding,
-					Size:     part.Size,
-					Params:   part.ParameterList,
-				},
+				part,
 			)
 		}
-
-		post.Body.Text = msg.Body.Sections[string(imap.BodySectionText)]
 	}
 
 	return post

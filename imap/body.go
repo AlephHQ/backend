@@ -5,6 +5,7 @@ type Body struct {
 	Multipart        bool
 	MultipartSubtype string
 	Sections         map[string]string
+	Full             string
 }
 
 func NewBody() *Body {

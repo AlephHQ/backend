@@ -11,6 +11,7 @@ const (
 	DataItemNameRFC822Header DataItemName = "RFC822.HEADER"
 	DataItemNameUID          DataItemName = "UID"
 	DataItemNameFlags        DataItemName = "FLAGS"
+	DataItemNameRFC822       DataItemName = "RFC822"
 
 	DataItemPlusFlag  DataItemName = "+FLAGS"
 	DataItemMinusFlag DataItemName = "-FLAGS"

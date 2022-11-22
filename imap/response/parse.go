@@ -226,6 +226,18 @@ func ParseMessage(resp *Response) (*imap.Message, error) {
 				message.SetUID(uid)
 			}
 			i += 2
+		case imap.MessageAttributeRFC822:
+			body := message.Body
+			if body == nil {
+				body = imap.NewBody()
+			}
+
+			if full, ok := fields[i+1].(string); ok {
+				body.Full = full
+			}
+
+			message.SetBody(body)
+			i += 2
 		}
 	}
 

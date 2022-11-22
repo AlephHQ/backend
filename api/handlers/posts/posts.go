@@ -90,15 +90,15 @@ func (Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		msgs, err := imapClient.Fetch(
 			seqset,
 			[]*imap.DataItem{
-				// {
-				// 	Name: imap.DataItemNameRFC822,
-				// },
-				// {
-				// 	Name: imap.DataItemNameInternalDate,
-				// },
-				// {
-				// 	Name: imap.DataItemNameEnvelope,
-				// },
+				{
+					Name: imap.DataItemNameRFC822,
+				},
+				{
+					Name: imap.DataItemNameInternalDate,
+				},
+				{
+					Name: imap.DataItemNameEnvelope,
+				},
 				{
 					Name: imap.DataItemNamePreview,
 				},

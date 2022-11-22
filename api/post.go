@@ -1,6 +1,7 @@
 package api
 
 import (
+	"mime"
 	"ncp/backend/imap"
 )
 
@@ -11,10 +12,11 @@ type Address struct {
 }
 
 type BodyPart struct {
-	Type     string `json:"type"`
-	Subtype  string `json:"subtype"`
-	Encoding string `json:"encoding"`
-	Size     uint64 `json:"size"`
+	Type     string            `json:"type"`
+	Subtype  string            `json:"subtype"`
+	Encoding string            `json:"encoding"`
+	Size     uint64            `json:"size"`
+	Params   map[string]string `json:"params"`
 }
 
 type Body struct {
@@ -77,7 +79,13 @@ func MessageToPost(msg *imap.Message) *Post {
 		}
 
 		post.MessageID = msg.Envelope.MessageID
-		post.Subject = msg.Envelope.Subject
+
+		dec := new(mime.WordDecoder)
+		if subject, err := dec.Decode(msg.Envelope.Subject); err == nil {
+			post.Subject = subject
+		} else {
+			post.Subject = msg.Envelope.Subject
+		}
 	}
 
 	if msg.Body != nil {
@@ -93,6 +101,7 @@ func MessageToPost(msg *imap.Message) *Post {
 					Subtype:  part.Subtype,
 					Encoding: part.Encoding,
 					Size:     part.Size,
+					Params:   part.ParameterList,
 				},
 			)
 		}

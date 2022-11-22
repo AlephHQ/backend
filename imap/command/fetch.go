@@ -47,7 +47,11 @@ func (f *Fetch) Command() string {
 	for _, item := range f.DataItems {
 		name := string(item.Name)
 		if item.Section != "" {
-			name = fmt.Sprintf("%s[%s]", item.Name, item.Section)
+			name = name + "[" + string(item.Section) + "]"
+		}
+
+		if item.Partial != "" {
+			name = name + "<" + item.Partial + ">"
 		}
 
 		items = append(items, name)

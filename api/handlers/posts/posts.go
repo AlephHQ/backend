@@ -98,7 +98,8 @@ func (Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				},
 				{
 					Name:    imap.DataItemNameBody,
-					Section: imap.BodySection("2"),
+					Section: imap.BodySectionText,
+					Partial: "0.1024",
 				},
 			},
 			"",

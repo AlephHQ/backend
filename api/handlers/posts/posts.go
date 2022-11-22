@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	"ncp/backend/api"
 	"ncp/backend/api/mongo"
 	"ncp/backend/imap"
 	"ncp/backend/imap/client"
-	"net/http"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -79,7 +80,7 @@ func (Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				var from, to uint64
 				to = imapClient.Mailbox().Exists
 				if to < 6 {
-					from = 0
+					from = 1
 				}
 
 				seqset = append(seqset, &imap.SeqRange{From: from, To: to})
@@ -93,8 +94,11 @@ func (Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					Name: imap.DataItemNameEnvelope,
 				},
 				{
+					Name: imap.DataItemNameBody,
+				},
+				{
 					Name:    imap.DataItemNameBody,
-					Section: imap.BodySectionText,
+					Section: imap.BodySection("2"),
 				},
 			},
 			"",
@@ -104,7 +108,12 @@ func (Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		b, _ := json.Marshal(msgs)
+		posts := make([]*api.Post, 0)
+		for _, msg := range msgs {
+			posts = append(posts, api.MessageToPost(msg))
+		}
+
+		b, _ := json.Marshal(posts)
 		fmt.Fprintf(w, `{"status":"success", "posts": %s}`, string(b))
 	}
 }

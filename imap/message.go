@@ -14,6 +14,8 @@ type Message struct {
 	Envelope *Envelope
 
 	Body *Body
+
+	Preview string
 }
 
 func NewMessage(seqnum uint64) *Message {

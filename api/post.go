@@ -118,5 +118,7 @@ func MessageToPost(msg *imap.Message) *Post {
 		}
 	}
 
+	post.Preview = msg.Preview
+
 	return post
 }

@@ -69,6 +69,7 @@ const (
 	MessageAttributeBodyPeek     MessageAttribute = "BODY.PEEK"
 	MessageAttributeUID          MessageAttribute = "UID"
 	MessageAttributeRFC822       MessageAttribute = "RFC822"
+	MessageAttributePreview      MessageAttribute = "PREVIEW"
 )
 
 type CompoundMessageAttribute struct {

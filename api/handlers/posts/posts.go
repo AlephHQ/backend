@@ -99,6 +99,9 @@ func (Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				{
 					Name: imap.DataItemNameEnvelope,
 				},
+				{
+					Name: imap.DataItemNamePreview,
+				},
 			},
 			"",
 		)

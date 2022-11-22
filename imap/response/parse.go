@@ -108,7 +108,6 @@ func ParseMessage(resp *Response) (*imap.Message, error) {
 				}
 			}
 
-			i += 2
 		case imap.MessageAttributeInternalDate:
 			if date, ok := fields[i+1].(string); ok {
 				message.SetInternalDate(date)
@@ -116,7 +115,6 @@ func ParseMessage(resp *Response) (*imap.Message, error) {
 				return nil, ErrParse
 			}
 
-			i += 2
 		case imap.MessageAttributeRFC822Size:
 			if size, ok := fields[i+1].(uint64); ok {
 				message.SetSize(size)
@@ -124,7 +122,6 @@ func ParseMessage(resp *Response) (*imap.Message, error) {
 				return nil, ErrParse
 			}
 
-			i += 2
 		case imap.MessageAttributeEnvelope:
 			envelope := imap.NewEnvelope()
 			envelopeFields := fields[i+1].([]interface{})
@@ -186,7 +183,6 @@ func ParseMessage(resp *Response) (*imap.Message, error) {
 			}
 
 			message.SetEnvelope(envelope)
-			i += 2
 		case imap.MessageAttributeBody, imap.MessageAttributeBodyPeek:
 			body := message.Body
 			if body == nil {
@@ -220,12 +216,10 @@ func ParseMessage(resp *Response) (*imap.Message, error) {
 			}
 
 			message.SetBody(body)
-			i += 2
 		case imap.MessageAttributeUID:
 			if uid, ok := fields[i+1].(uint64); ok {
 				message.SetUID(uid)
 			}
-			i += 2
 		case imap.MessageAttributeRFC822:
 			body := message.Body
 			if body == nil {
@@ -237,8 +231,16 @@ func ParseMessage(resp *Response) (*imap.Message, error) {
 			}
 
 			message.SetBody(body)
-			i += 2
+		case imap.MessageAttributePreview:
+			preview := fields[i+1]
+			if fuzzy, ok := preview.([]interface{}); ok {
+				if code, ok := fuzzy[0].(string); ok && code == "FUZZY" {
+					message.Preview = fuzzy[1].(string)
+				}
+			}
 		}
+
+		i += 2
 	}
 
 	return message, nil

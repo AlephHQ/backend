@@ -12,6 +12,7 @@ const (
 	DataItemNameUID          DataItemName = "UID"
 	DataItemNameFlags        DataItemName = "FLAGS"
 	DataItemNameRFC822       DataItemName = "RFC822"
+	DataItemNamePreview      DataItemName = "PREVIEW"
 
 	DataItemPlusFlag  DataItemName = "+FLAGS"
 	DataItemMinusFlag DataItemName = "-FLAGS"

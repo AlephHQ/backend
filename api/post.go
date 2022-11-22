@@ -3,6 +3,7 @@ package api
 import (
 	"mime"
 	"ncp/backend/imap"
+	"strings"
 )
 
 type Address struct {
@@ -83,8 +84,9 @@ func MessageToPost(msg *imap.Message) *Post {
 
 		post.MessageID = msg.Envelope.MessageID
 
-		dec := new(mime.WordDecoder)
-		if subject, err := dec.Decode(msg.Envelope.Subject); err == nil {
+		if strings.HasPrefix(msg.Envelope.Subject, "=?") && strings.HasSuffix(msg.Envelope.Subject, "?=") {
+			dec := new(mime.WordDecoder)
+			subject, _ := dec.Decode(msg.Envelope.Subject)
 			post.Subject = subject
 		} else {
 			post.Subject = msg.Envelope.Subject

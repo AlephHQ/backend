@@ -15,6 +15,7 @@ func runIMAP() {
 	}
 	defer c.Logout()
 
+	// err = c.Login("4Y4kKNqUH0ZUUw@modsoussi.com", "qEYDj0T4T1_SHhgN")
 	err = c.Login("mo@modsoussi.com", "alohomora")
 	if err != nil {
 		log.Panic(err)
@@ -44,6 +45,9 @@ func runIMAP() {
 			{
 				Name: imap.DataItemNameFlags,
 			},
+			{
+				Name: imap.DataItemNamePreview,
+			},
 		},
 		"",
 	)
@@ -57,6 +61,8 @@ func runIMAP() {
 		} else {
 			log.Printf("No Sender: %s", msg.Envelope.Subject)
 		}
+
+		log.Println(msg.Preview)
 
 		// if len(msg.Body.Parts) > 0 {
 		// 	msg, err := c.Fetch(
@@ -125,4 +131,6 @@ func main() {
 	if err := server.Serve(&server.Params{Port: "7001"}); err != nil {
 		log.Panic(err)
 	}
+
+	// runIMAP()
 }

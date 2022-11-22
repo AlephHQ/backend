@@ -138,13 +138,15 @@ func (reader *IMAPReader) readString() (string, error) {
 		}
 
 		str := ""
-		for i := uint64(0); i < num; i++ {
-			r, _, err = reader.r.ReadRune()
+		current := uint64(0)
+		for current < num {
+			r, size, err := reader.r.ReadRune()
 			if err != nil {
 				return "", err
 			}
 
 			str += string(r)
+			current += uint64(size)
 		}
 
 		return str, nil

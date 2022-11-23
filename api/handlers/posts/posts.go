@@ -77,9 +77,9 @@ func (Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if imapClient.Mailbox().Exists == 1 {
 				seqset = append(seqset, &imap.SeqNumber{1})
 			} else {
-				var from, to uint64
-				to = imapClient.Mailbox().Exists
-				if to < 6 {
+				to := imapClient.Mailbox().Exists
+				from := to - 5
+				if to < 10 {
 					from = 1
 				}
 
@@ -101,6 +101,9 @@ func (Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				},
 				{
 					Name: imap.DataItemNamePreview,
+				},
+				{
+					Name: imap.DataItemNameFlags,
 				},
 			},
 			"",

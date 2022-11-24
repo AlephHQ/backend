@@ -128,7 +128,7 @@ func runIMAP() {
 }
 
 func main() {
-	if err := server.Serve(&server.Params{Port: "7001"}); err != nil {
+	if err := server.Serve(&server.ServeParams{Port: "7001"}); err != nil {
 		log.Panic(err)
 	}
 

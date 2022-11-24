@@ -59,19 +59,22 @@ func (r *radix) insert(pattern string, h http.Handler) {
 			i++
 		}
 
+		found += len(prefix)
 		if traversable == nil {
-			current.edges = append(
-				current.edges,
-				&edge{
-					label:  pattern[found:],
-					target: newnode(h),
-				},
-			)
+			if found == len(pattern) {
+				current.handler = h
+			} else {
+				current.edges = append(
+					current.edges,
+					&edge{
+						label:  pattern[found:],
+						target: newnode(h),
+					},
+				)
+			}
 
 			inserted = true
 		} else {
-			found += len(prefix)
-
 			if len(prefix) == len(traversable.label) {
 				current = traversable.target
 			} else if len(prefix) < len(traversable.label) {

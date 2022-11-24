@@ -153,8 +153,8 @@ func Serve(params *ServeParams) error {
 	mux := NewServeMux()
 	mux.Handle("/v1.0/auth", auth.NewHandler())
 	mux.Handle("/v1.0/inbox", inbox.NewHandler())
-	mux.Handle("/v1.0/posts/:id", post.NewHandler())
 	mux.Handle("/v1.0/posts", posts.NewHandler())
+	mux.Handle("/v1.0/posts/:id", post.NewHandler())
 
 	if err := http.ListenAndServe(":"+params.Port, middleware.Logger(mux)); err != nil {
 		return err

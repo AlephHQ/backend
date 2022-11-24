@@ -3,6 +3,7 @@ package post
 import (
 	"fmt"
 	"log"
+	"ncp/backend/api"
 	"net/http"
 )
 
@@ -15,7 +16,7 @@ func NewHandler() *Handler {
 func (Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		log.Printf("Params: %v\n", r.Context().Value("params"))
+		log.Printf("Params: %v\n", r.Context().Value(api.ContextKeyNameParams))
 
 		fmt.Fprint(w, `{"status":"success"}`)
 	}

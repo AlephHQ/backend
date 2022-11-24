@@ -62,6 +62,14 @@ func (r *radix) insert(pattern string, h http.Handler) {
 		found += len(prefix)
 		if traversable == nil {
 			if found == len(pattern) {
+				// this handles the case where our pattern
+				// already exists in the tree and ends at a node
+				// with a nil handler.
+				//
+				// case example:
+				// 	- insert(classical)
+				// 	- insert(clasmical)
+				//	- insert(clas)
 				current.handler = h
 			} else {
 				current.edges = append(
@@ -85,11 +93,22 @@ func (r *radix) insert(pattern string, h http.Handler) {
 						target: traversable.target,
 						label:  traversable.label[len(prefix):],
 					},
-					&edge{
-						target: newnode(h),
-						label:  pattern[found:],
-					},
 				)
+
+				// this avoids adding edges with the empty string
+				// as a label when we've already found all the elements
+				// in our pattern
+				if found < len(pattern) {
+					newTarget.edges = append(
+						newTarget.edges,
+						&edge{
+							target: newnode(h),
+							label:  pattern[found:],
+						},
+					)
+				} else if found == len(pattern) {
+					newTarget.handler = h
+				}
 
 				traversable.target = newTarget
 				traversable.label = prefix

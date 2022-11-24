@@ -15,10 +15,6 @@ type node struct {
 	edges   []*edge
 }
 
-func (n *node) isleaf() bool {
-	return len(n.edges) == 0
-}
-
 func newnode(h http.Handler) *node {
 	return &node{
 		edges:   make([]*edge, 0),
@@ -124,6 +120,7 @@ func (r *radix) find(pattern string) (http.Handler, string) {
 			return nil, pattern
 		} else {
 			found += len(next.label)
+			current = next.target
 
 			if found == len(pattern) {
 				return next.target.handler, pattern

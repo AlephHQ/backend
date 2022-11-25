@@ -8,7 +8,8 @@ import (
 type ConnectionState int
 
 const (
-	NotAuthenticatedState ConnectionState = iota
+	NotConnectedState ConnectionState = iota
+	NotAuthenticatedState
 	AuthenticatedState
 	SelectedState
 	LogoutState

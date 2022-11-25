@@ -149,7 +149,7 @@ func (c *Client) handle(resp *response.Response) error {
 
 func (c *Client) read() {
 	for {
-		if c.state == imap.LogoutState {
+		if c.State() == imap.LogoutState {
 			return
 		}
 
@@ -180,6 +180,7 @@ func Dial(network, addr string) (*Client, error) {
 		conn:     conn,
 		handlers: handlers,
 		updates:  updates,
+		state:    imap.NotConnectedState,
 	}
 
 	err = client.waitForAndHandleGreeting()
@@ -204,6 +205,7 @@ func DialWithTLS(network, addr string) (*Client, error) {
 		conn:     conn,
 		handlers: handlers,
 		updates:  updates,
+		state:    imap.NotConnectedState,
 	}
 
 	err = client.waitForAndHandleGreeting()
@@ -214,6 +216,13 @@ func DialWithTLS(network, addr string) (*Client, error) {
 	go client.read()
 
 	return client, nil
+}
+
+func (c *Client) State() (s imap.ConnectionState) {
+	c.slock.Lock()
+	s = c.state
+	c.slock.Unlock()
+	return
 }
 
 func (c *Client) Capability(cap string) bool {
@@ -239,7 +248,7 @@ func (c *Client) Login(username, password string) error {
 }
 
 func (c *Client) Close() error {
-	if c.state != imap.SelectedState {
+	if c.State() != imap.SelectedState {
 		return imap.ErrNotSelected
 	}
 
@@ -255,7 +264,7 @@ func (c *Client) Close() error {
 }
 
 func (c *Client) Logout() error {
-	if c.state == imap.SelectedState {
+	if c.State() == imap.SelectedState {
 		err := c.Close()
 		if err != nil {
 			return err
@@ -275,7 +284,7 @@ func (c *Client) Logout() error {
 }
 
 func (c *Client) Select(name string) error {
-	if c.state != imap.AuthenticatedState {
+	if c.State() != imap.AuthenticatedState {
 		return imap.ErrNotAuthenticated
 	}
 
@@ -296,7 +305,7 @@ func (c *Client) Mailbox() *imap.Mailbox {
 }
 
 func (c *Client) Fetch(seqset []imap.SeqSet, items []*imap.DataItem, m imap.FetchMacro) ([]*imap.Message, error) {
-	if c.state != imap.SelectedState {
+	if c.State() != imap.SelectedState {
 		return nil, imap.ErrNotSelected
 	}
 
@@ -330,7 +339,7 @@ func (c *Client) Fetch(seqset []imap.SeqSet, items []*imap.DataItem, m imap.Fetc
 }
 
 func (c *Client) Search(items []*imap.SearchItem) ([]uint64, error) {
-	if c.state != imap.SelectedState {
+	if c.State() != imap.SelectedState {
 		return nil, imap.ErrNotSelected
 	}
 
@@ -351,7 +360,7 @@ func (c *Client) Search(items []*imap.SearchItem) ([]uint64, error) {
 }
 
 func (c *Client) Expunge() error {
-	if c.state != imap.SelectedState {
+	if c.State() != imap.SelectedState {
 		return imap.ErrNotSelected
 	}
 
@@ -362,7 +371,7 @@ func (c *Client) Expunge() error {
 }
 
 func (c *Client) Store(seqset []imap.SeqSet, name imap.DataItemName, values []imap.Flag) error {
-	if c.state != imap.SelectedState {
+	if c.State() != imap.SelectedState {
 		return imap.ErrNotSelected
 	}
 
@@ -373,7 +382,7 @@ func (c *Client) Store(seqset []imap.SeqSet, name imap.DataItemName, values []im
 }
 
 func (c *Client) Create(name string) error {
-	if c.state != imap.AuthenticatedState {
+	if c.State() != imap.AuthenticatedState {
 		return imap.ErrNotAuthenticated
 	}
 
@@ -384,7 +393,7 @@ func (c *Client) Create(name string) error {
 }
 
 func (c *Client) Delete(name string) error {
-	if c.state != imap.AuthenticatedState {
+	if c.State() != imap.AuthenticatedState {
 		return imap.ErrNotAuthenticated
 	}
 

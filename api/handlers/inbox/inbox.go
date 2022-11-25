@@ -8,7 +8,7 @@ import (
 
 	"ncp/backend/api"
 	"ncp/backend/api/mongo"
-	"ncp/backend/imap/client"
+	"ncp/backend/imap/sessions"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -46,20 +46,10 @@ func (Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		imapClient, err := client.DialWithTLS("tcp", "modsoussi.com:993")
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		defer imapClient.Logout()
-
-		err = imapClient.Login(user.Username+"@modsoussi.com", user.InternalPassword)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		err = imapClient.Select("INBOX")
+		imapClient, err := sessions.Session(&sessions.Params{
+			Username: user.Username,
+			Password: user.InternalPassword,
+		})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

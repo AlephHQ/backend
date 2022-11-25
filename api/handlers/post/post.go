@@ -102,6 +102,10 @@ func (Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				},
 				"",
 			)
+			if err != nil {
+				api.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 
 			b, _ := json.Marshal(api.MessageToPost(messages[0]))
 			fmt.Fprintf(w, `{"status":"success", "post": %s}`, string(b))

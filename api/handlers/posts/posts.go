@@ -28,13 +28,13 @@ func (Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		userID := r.FormValue("user_id")
 		if userID == "" {
-			http.Error(w, "missing user_id param", http.StatusBadRequest)
+			api.Error(w, "missing user_id param", http.StatusBadRequest)
 			return
 		}
 
 		uoid, err := primitive.ObjectIDFromHex(userID)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			api.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -44,11 +44,11 @@ func (Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			bson.D{{"_id", uoid}},
 		).Decode(&user)
 		if err == mongo.ErrNoDocuments {
-			http.Error(w, "user not found", http.StatusNotFound)
+			api.Error(w, "user not found", http.StatusNotFound)
 			return
 		}
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			api.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -57,7 +57,7 @@ func (Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			Password: user.InternalPassword,
 		})
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			api.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -98,7 +98,7 @@ func (Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			"",
 		)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			api.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 

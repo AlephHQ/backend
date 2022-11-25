@@ -67,9 +67,9 @@ func (r *radix) insert(pattern string, h http.Handler) {
 				// with a nil handler.
 				//
 				// case example:
-				// 	- insert(classical)
-				// 	- insert(clasmical)
-				//	- insert(clas)
+				// 	1. insert(classical, h1)
+				// 	2. insert(clasmical, h2)
+				//	3. insert(clas, h3)
 				current.handler = h
 			} else {
 				current.edges = append(

@@ -8,12 +8,10 @@ import (
 type ConnectionState int
 
 const (
-	ConnectingState       ConnectionState = 0
-	NotAuthenticatedState ConnectionState = 1
-	AuthenticatedState    ConnectionState = 2
-	SelectedState         ConnectionState = 3
-	LogoutState           ConnectionState = 4
-	ConnectedState        ConnectionState = 5
+	NotAuthenticatedState ConnectionState = iota
+	AuthenticatedState
+	SelectedState
+	LogoutState
 )
 
 // RFC3501 Section 7

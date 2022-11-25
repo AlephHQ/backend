@@ -6,3 +6,9 @@ const (
 	ContextKeyNameParams ContextKeyName = "params"
 	ContextKeyNameUserID ContextKeyName = "user_id"
 )
+
+type CookieName string
+
+const (
+	CookieNameSession CookieName = "ssid"
+)

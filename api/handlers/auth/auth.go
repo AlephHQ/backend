@@ -10,6 +10,7 @@ import (
 
 	"ncp/backend/api"
 	"ncp/backend/api/mongo"
+	"ncp/backend/api/session"
 	"ncp/backend/env"
 	"ncp/backend/utils"
 
@@ -108,6 +109,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 			err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 			if err == nil {
+				session.SetCookie(w)
 				fmt.Fprintf(w, `{"status":"success", "user": %s}`, user.JSON())
 				return
 			}
@@ -120,6 +122,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
+			session.SetCookie(w)
 			fmt.Fprintf(w, `{"status":"success", "user": %s}`, user.JSON())
 		}
 	}

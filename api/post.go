@@ -23,7 +23,6 @@ type BodyPart struct {
 
 type Body struct {
 	Parts []*BodyPart `json:"parts"`
-	Full  string      `json:"full"`
 }
 
 type Post struct {

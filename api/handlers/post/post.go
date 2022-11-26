@@ -2,7 +2,6 @@ package post
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"mime/quotedprintable"
@@ -158,8 +157,11 @@ func (Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				msg.Body.Sections[fetchPart] = string(b)
 			}
 
-			b, _ := json.Marshal(api.MessageToPost(msg))
-			fmt.Fprintf(w, `{"status":"success", "post": %s}`, string(b))
+			// b, _ := json.Marshal(api.MessageToPost(msg))
+			// fmt.Fprintf(w, `{"status":"success", "post": %s}`, string(b))
+			post := api.MessageToPost(msg)
+			w.Header().Add("Content-Type", post.Body.Type+"/"+post.Body.Subtype+"; charset="+post.Body.Params["charset"])
+			fmt.Fprint(w, post.Body.Content)
 			return
 		}
 

@@ -4,12 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"mime/quotedprintable"
 	"ncp/backend/api"
 	"ncp/backend/api/mongo"
 	"ncp/backend/imap"
 	"ncp/backend/imap/sessions"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -78,26 +81,22 @@ func (Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
+			// fetching messages is a two step process.
+			// step 1: fetch (BODY). This will send the MIME multipart
+			// 				 body structure.
+			// step 2: use information in step 1 to fetch content in one
+			// 				 of the data formats available. Usually this will be one
+			//				 of text/plain, text/html.
+			//
+			// Worth noting that right now we prioritize html. Send text/html if
+			// it exists, otherwise send text/plain.
 			messages, err := imapClient.Fetch(
 				[]imap.SeqSet{
 					&imap.SeqNumber{seqnum},
 				},
 				[]*imap.DataItem{
 					{
-						Name:    imap.DataItemNameBody,
-						Section: imap.BodySectionText,
-					},
-					{
-						Name: imap.DataItemNameEnvelope,
-					},
-					{
-						Name: imap.DataItemNameInternalDate,
-					},
-					{
-						Name: imap.DataItemNameFlags,
-					},
-					{
-						Name: imap.DataItemNameRFC822Size,
+						Name: imap.DataItemNameBody,
 					},
 				},
 				"",
@@ -107,7 +106,59 @@ func (Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			b, _ := json.Marshal(api.MessageToPost(messages[0]))
+			msg := messages[0] // we know there's exactly one message in the result
+			fetchPart := "1"
+			if msg.Body != nil {
+				for i, part := range msg.Body.Parts {
+					if part.Type == "text" && part.Subtype == "html" {
+						fetchPart = strconv.Itoa(i + 1)
+					}
+				}
+			}
+
+			messages, err = imapClient.Fetch(
+				[]imap.SeqSet{
+					&imap.SeqNumber{seqnum},
+				},
+				[]*imap.DataItem{
+					{
+						Name:    imap.DataItemNameBody,
+						Section: imap.BodySection(fetchPart),
+					},
+					{
+						Name: imap.DataItemNameBody,
+					},
+					{
+						Name: imap.DataItemNameEnvelope,
+					},
+					{
+						Name: imap.DataItemNameFlags,
+					},
+					{
+						Name: imap.DataItemNameInternalDate,
+					},
+				},
+				"",
+			)
+			if err != nil {
+				api.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			msg = messages[0]
+			content := msg.Body.Sections[fetchPart]
+			switch imap.Encoding(msg.Body.Parts[0].Encoding) {
+			case imap.EncodingQuotePrintable:
+				b, err := io.ReadAll(quotedprintable.NewReader(strings.NewReader(content)))
+				if err != nil {
+					api.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				msg.Body.Sections[fetchPart] = string(b)
+			}
+
+			b, _ := json.Marshal(api.MessageToPost(msg))
 			fmt.Fprintf(w, `{"status":"success", "post": %s}`, string(b))
 			return
 		}

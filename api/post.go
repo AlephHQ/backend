@@ -3,6 +3,7 @@ package api
 import (
 	"mime"
 	"ncp/backend/imap"
+	"strconv"
 	"strings"
 )
 
@@ -12,17 +13,13 @@ type Address struct {
 	Host    string `json:"host"`
 }
 
-type BodyPart struct {
+type Body struct {
 	Type     string            `json:"type"`
 	Subtype  string            `json:"subtype"`
 	Encoding string            `json:"encoding"`
 	Size     uint64            `json:"size"`
 	Params   map[string]string `json:"params"`
 	Content  string            `json:"content"`
-}
-
-type Body struct {
-	Parts []*BodyPart `json:"parts"`
 }
 
 type Post struct {
@@ -35,8 +32,8 @@ type Post struct {
 	MessageID    string             `json:"message_id"`
 	Subject      string             `json:"subject"`
 	Flags        map[imap.Flag]bool `json:"flags"`
-	Body         *Body              `json:"body"`
-	Preview      string             `json:"preview"`
+	Body         *Body              `json:"body,omitempty"`
+	Preview      string             `json:"preview,omitempty"`
 }
 
 func MessageToPost(msg *imap.Message) *Post {
@@ -97,23 +94,18 @@ func MessageToPost(msg *imap.Message) *Post {
 	post.Flags = msg.Flags
 
 	if msg.Body != nil {
-		post.Body = &Body{
-			Parts: make([]*BodyPart, 0),
-		}
-
-		for _, p := range msg.Body.Parts {
-			part := &BodyPart{
-				Type:     p.Type,
-				Subtype:  p.Subtype,
-				Encoding: p.Encoding,
-				Size:     p.Size,
-				Params:   p.ParameterList,
+		for i, p := range msg.Body.Parts {
+			section := strconv.Itoa(i + 1)
+			if msg.Body.Sections[section] != "" {
+				post.Body = &Body{
+					Type:     p.Type,
+					Subtype:  p.Subtype,
+					Encoding: p.Encoding,
+					Size:     p.Size,
+					Params:   p.ParameterList,
+					Content:  msg.Body.Sections[section],
+				}
 			}
-
-			post.Body.Parts = append(
-				post.Body.Parts,
-				part,
-			)
 		}
 	}
 

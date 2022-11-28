@@ -5,7 +5,9 @@ import (
 	"net/http"
 )
 
-func Logger(next http.Handler) http.Handler {
+type logger struct{}
+
+func (logger) Apply(next http.Handler) http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			log.Printf("ncp/api - %s %s", r.Method, r.URL.Path)
@@ -13,4 +15,8 @@ func Logger(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		},
 	)
+}
+
+func Logger() logger {
+	return logger{}
 }

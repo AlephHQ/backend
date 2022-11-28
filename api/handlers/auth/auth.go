@@ -121,6 +121,14 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 
 			fmt.Fprintf(w, `{"status":"success", "user": %s}`, user.JSON())
+		case "":
+			api.Error(w, "missing action param", http.StatusBadRequest)
+		default:
+			api.Error(
+				w,
+				fmt.Sprintf("action %s not implemented", action),
+				http.StatusNotImplemented,
+			)
 		}
 	}
 }

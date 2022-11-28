@@ -156,7 +156,10 @@ func Serve(params *ServeParams) error {
 	mux.Handle("/v1.0/posts", posts.NewHandler())
 	mux.Handle("/v1.0/posts/:seqnum", post.NewHandler())
 
-	if err := http.ListenAndServe(":"+params.Port, middleware.Logger(mux)); err != nil {
+	if err := http.ListenAndServe(
+		":"+params.Port,
+		middleware.Chain(mux, middleware.Logger(), middleware.CORS()),
+	); err != nil {
 		return err
 	}
 

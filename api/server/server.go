@@ -152,9 +152,9 @@ type ServeParams struct {
 func Serve(params *ServeParams) error {
 	mux := NewServeMux()
 	mux.Handle("/v1.0/auth", auth.NewHandler())
-	mux.Handle("/v1.0/inbox", inbox.NewHandler())
-	mux.Handle("/v1.0/posts", posts.NewHandler())
-	mux.Handle("/v1.0/posts/:seqnum", post.NewHandler())
+	mux.Handle("/v1.0/inbox", middleware.Chain(inbox.NewHandler(), middleware.Auth()))
+	mux.Handle("/v1.0/posts", middleware.Chain(posts.NewHandler(), middleware.Auth()))
+	mux.Handle("/v1.0/posts/:seqnum", middleware.Chain(post.NewHandler(), middleware.Auth()))
 
 	if err := http.ListenAndServe(
 		":"+params.Port,

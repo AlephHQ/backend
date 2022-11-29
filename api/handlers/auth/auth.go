@@ -3,8 +3,8 @@ package auth
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -19,6 +19,8 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 )
+
+var errUserNotFound = errors.New("user not found")
 
 type Handler struct{}
 
@@ -77,6 +79,25 @@ func signup(email, password string) (*api.User, error) {
 	return user, nil
 }
 
+func signin(email, password string) (u *api.User, err error) {
+	err = mongo.AuthCollection().FindOne(
+		context.Background(),
+		bson.D{
+			{"email_addresses.addr", email},
+		},
+	).Decode(&u)
+	if err == mongo.ErrNoDocuments {
+		return
+	}
+
+	if err != nil {
+		return
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
+	return
+}
+
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -90,24 +111,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		switch action {
 		case "signin":
-			user := &api.User{}
-			err := mongo.AuthCollection().FindOne(
-				context.Background(),
-				bson.D{
-					{"email_addresses.addr", email},
-				},
-			).Decode(&user)
-			if err == mongo.ErrNoDocuments {
-				fmt.Fprint(w, `{"status":"error", "message":"user not found"}`)
-				return
-			}
-
-			if err != nil {
-				log.Panic(err)
-			}
-
-			err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
-			if err == nil {
+			if user, err := signin(email, password); err == nil {
+				api.SetAuthCookies(w, user)
 				fmt.Fprintf(w, `{"status":"success", "user": %s}`, user.JSON())
 				return
 			}

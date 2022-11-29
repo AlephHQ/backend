@@ -24,15 +24,8 @@ func NewHandler() *Handler {
 func (Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		r.ParseForm()
-
-		userID := r.FormValue("user_id")
-		if userID == "" {
-			api.Error(w, "missing user_id param", http.StatusBadRequest)
-			return
-		}
-
-		uoid, err := primitive.ObjectIDFromHex(userID)
+		userID := r.Context().Value(api.ContextKeyNameUserID)
+		uoid, err := primitive.ObjectIDFromHex(userID.(string))
 		if err != nil {
 			api.Error(w, err.Error(), http.StatusBadRequest)
 			return

@@ -30,8 +30,7 @@ var ErrParamsInvalid = errors.New("invalid params")
 // added to the store.
 func Session(p *Params) (c *client.Client, err error) {
 	if p.Username == "" && p.Password == "" {
-		err = ErrParamsInvalid
-		return
+		panic("username and password can't be empty")
 	}
 
 	if defaultStore.clients == nil {

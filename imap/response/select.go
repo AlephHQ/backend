@@ -1,7 +1,6 @@
 package response
 
 import (
-	"errors"
 	"log"
 	"strconv"
 
@@ -67,7 +66,7 @@ func (s *Select) Handle(resp *Response) (bool, error) {
 
 		return false, imap.ErrUnhandled
 	case imap.StatusResponseNO:
-		return true, errors.New( /* strings.Join(resp.Fields[2:], " " */ "error")
+		return true, resp.Error()
 	}
 
 	// now let's handle the untagged responses FLAGS, EXISTS, and RECENT

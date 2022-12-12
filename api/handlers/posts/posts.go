@@ -60,7 +60,7 @@ func (Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				seqset = append(seqset, &imap.SeqNumber{1})
 			} else {
 				to := imapClient.Mailbox().Exists
-				from := to - 5
+				from := to - 9
 				if to < 10 {
 					from = 1
 				}

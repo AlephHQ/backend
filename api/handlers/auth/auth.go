@@ -28,7 +28,7 @@ func NewHandler() *Handler {
 	return &Handler{}
 }
 
-func insertNewUserInMailAuthTable(u *api.User) error {
+func insertNewUserInternalCreds(u *api.User) error {
 	db, err := sql.Open("mysql", env.MySQLURI())
 	if err != nil {
 		return err
@@ -66,7 +66,7 @@ func signup(email, password string) (*api.User, error) {
 
 	user.ID = result.InsertedID.(primitive.ObjectID)
 
-	err = insertNewUserInMailAuthTable(user)
+	err = insertNewUserInternalCreds(user)
 	if err != nil {
 		_, derr := mongo.AuthCollection().DeleteOne(context.Background(), bson.D{{"_id", user.ID}})
 		if derr != nil {

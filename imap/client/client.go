@@ -4,6 +4,7 @@ import (
 	"io"
 	"log"
 	"sync"
+	"time"
 
 	"ncp/backend/imap"
 	"ncp/backend/imap/command"
@@ -25,6 +26,8 @@ type Client struct {
 	mbox *imap.Mailbox
 
 	updates chan string
+
+	lastActive time.Time
 }
 
 type Handled struct {
@@ -83,6 +86,8 @@ func (c *Client) execute(cmd string, handler response.Handler) error {
 	if err != nil {
 		log.Panic(err)
 	}
+
+	c.lastActive = time.Now()
 
 	for {
 		select {
@@ -166,6 +171,17 @@ func (c *Client) read() {
 	}
 }
 
+func (c *Client) idlecure() {
+	for {
+		idleDurationAllowed := 1 * time.Minute
+		time.Sleep(idleDurationAllowed)
+
+		if time.Since(c.lastActive) > idleDurationAllowed {
+			c.NOOP()
+		}
+	}
+}
+
 // BEGIN EXPORTED
 
 func Dial(network, addr string) (*Client, error) {
@@ -177,10 +193,11 @@ func Dial(network, addr string) (*Client, error) {
 	}
 
 	client := &Client{
-		conn:     conn,
-		handlers: handlers,
-		updates:  updates,
-		state:    imap.NotConnectedState,
+		conn:       conn,
+		handlers:   handlers,
+		updates:    updates,
+		state:      imap.NotConnectedState,
+		lastActive: time.Now(),
 	}
 
 	err = client.waitForAndHandleGreeting()
@@ -189,6 +206,7 @@ func Dial(network, addr string) (*Client, error) {
 	}
 
 	go client.read()
+	go client.idlecure()
 
 	return client, nil
 }
@@ -202,10 +220,11 @@ func DialWithTLS(network, addr string) (*Client, error) {
 	}
 
 	client := &Client{
-		conn:     conn,
-		handlers: handlers,
-		updates:  updates,
-		state:    imap.NotConnectedState,
+		conn:       conn,
+		handlers:   handlers,
+		updates:    updates,
+		state:      imap.NotConnectedState,
+		lastActive: time.Now(),
 	}
 
 	err = client.waitForAndHandleGreeting()
@@ -214,6 +233,7 @@ func DialWithTLS(network, addr string) (*Client, error) {
 	}
 
 	go client.read()
+	go client.idlecure()
 
 	return client, nil
 }
@@ -399,6 +419,13 @@ func (c *Client) Delete(name string) error {
 
 	cmd := command.NewCmdDelete(name)
 	handler := response.NewHandlerDelete(cmd.Tag)
+
+	return c.execute(cmd.Command(), handler)
+}
+
+func (c *Client) NOOP() error {
+	cmd := command.NewCmdNoop()
+	handler := response.NewHandlerNoop(cmd.Tag)
 
 	return c.execute(cmd.Command(), handler)
 }

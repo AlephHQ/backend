@@ -190,7 +190,7 @@ func (c *Client) read() {
 }
 
 func (c *Client) idlecure() {
-	idleDurationAllowed := 1 * time.Minute
+	idleDurationAllowed := 5 * time.Minute
 	for {
 		time.Sleep(idleDurationAllowed)
 

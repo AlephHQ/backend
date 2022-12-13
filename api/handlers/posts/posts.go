@@ -73,9 +73,6 @@ func (Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			seqset,
 			[]*imap.DataItem{
 				{
-					Name: imap.DataItemNameRFC822,
-				},
-				{
 					Name: imap.DataItemNameInternalDate,
 				},
 				{

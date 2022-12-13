@@ -1,8 +1,8 @@
 package command
 
 import (
+	"aleph/backend/imap"
 	"fmt"
-	"ncp/backend/imap"
 	"strings"
 )
 

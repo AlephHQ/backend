@@ -1,9 +1,9 @@
 package response
 
 import (
+	"aleph/backend/imap"
 	"fmt"
 	"log"
-	"ncp/backend/imap"
 )
 
 type Fetch struct {

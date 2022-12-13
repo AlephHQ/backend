@@ -1,8 +1,8 @@
 package api
 
 import (
+	"aleph/backend/imap"
 	"mime"
-	"ncp/backend/imap"
 	"strconv"
 	"strings"
 )

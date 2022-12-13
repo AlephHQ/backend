@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"ncp/backend/api"
-	"ncp/backend/api/mongo"
-	"ncp/backend/imap/sessions"
+	"aleph/backend/api"
+	"aleph/backend/api/mongo"
+	"aleph/backend/imap/sessions"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"

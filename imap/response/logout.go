@@ -1,7 +1,7 @@
 package response
 
 import (
-	"ncp/backend/imap"
+	"aleph/backend/imap"
 )
 
 type Logout struct {

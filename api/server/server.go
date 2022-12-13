@@ -6,12 +6,12 @@ import (
 	"strings"
 	"sync"
 
-	"ncp/backend/api"
-	"ncp/backend/api/handlers/auth"
-	"ncp/backend/api/handlers/inbox"
-	"ncp/backend/api/handlers/post"
-	"ncp/backend/api/handlers/posts"
-	"ncp/backend/api/server/middleware"
+	"aleph/backend/api"
+	"aleph/backend/api/handlers/auth"
+	"aleph/backend/api/handlers/inbox"
+	"aleph/backend/api/handlers/post"
+	"aleph/backend/api/handlers/posts"
+	"aleph/backend/api/server/middleware"
 )
 
 type paramroute struct {

@@ -1,8 +1,8 @@
 package api
 
 import (
-	"ncp/backend/env"
-	"ncp/backend/utils"
+	"aleph/backend/env"
+	"aleph/backend/utils"
 	"net/http"
 	"time"
 
@@ -33,7 +33,7 @@ func SetAuthCookies(w http.ResponseWriter, u *User) {
 			ExpiresAt: jwt.NewNumericDate(time.Now().AddDate(0, 0, 1)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
-			Issuer:    "ncp/api/v1.0",
+			Issuer:    "aleph/api/v1.0",
 			Subject:   u.ID.Hex(),
 		},
 	})

@@ -1,4 +1,4 @@
-module ncp/backend
+module aleph/backend
 
 go 1.19
 

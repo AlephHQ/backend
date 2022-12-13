@@ -1,6 +1,6 @@
 package response
 
-import "ncp/backend/imap"
+import "aleph/backend/imap"
 
 type NOOP struct {
 	Tag string

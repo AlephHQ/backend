@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"ncp/backend/api"
-	"ncp/backend/api/mongo"
-	"ncp/backend/imap"
-	"ncp/backend/imap/sessions"
+	"aleph/backend/api"
+	"aleph/backend/api/mongo"
+	"aleph/backend/imap"
+	"aleph/backend/imap/sessions"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -82,7 +82,12 @@ func (Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					Name: imap.DataItemNameEnvelope,
 				},
 				{
-					Name: imap.DataItemNamePreview,
+					Name: imap.DataItemNameBody,
+				},
+				{
+					Name:    imap.DataItemNameBody,
+					Section: imap.BodySection("1"),
+					Partial: "0.1024",
 				},
 				{
 					Name: imap.DataItemNameFlags,

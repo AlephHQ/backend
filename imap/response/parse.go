@@ -1,8 +1,8 @@
 package response
 
 import (
+	"aleph/backend/imap"
 	"errors"
-	"ncp/backend/imap"
 	"strconv"
 )
 

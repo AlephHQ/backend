@@ -1,9 +1,9 @@
 package sessions
 
 import (
+	"aleph/backend/imap"
+	"aleph/backend/imap/client"
 	"errors"
-	"ncp/backend/imap"
-	"ncp/backend/imap/client"
 	"sync"
 )
 

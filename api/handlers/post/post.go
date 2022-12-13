@@ -1,15 +1,15 @@
 package post
 
 import (
+	"aleph/backend/api"
+	"aleph/backend/api/mongo"
+	"aleph/backend/imap"
+	"aleph/backend/imap/sessions"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"mime/quotedprintable"
-	"ncp/backend/api"
-	"ncp/backend/api/mongo"
-	"ncp/backend/imap"
-	"ncp/backend/imap/sessions"
 	"net/http"
 	"strconv"
 	"strings"

@@ -4,7 +4,7 @@ import (
 	"log"
 	"strconv"
 
-	"ncp/backend/imap"
+	"aleph/backend/imap"
 )
 
 type Select struct {

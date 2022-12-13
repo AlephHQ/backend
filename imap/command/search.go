@@ -1,6 +1,6 @@
 package command
 
-import "ncp/backend/imap"
+import "aleph/backend/imap"
 
 type Search struct {
 	Tag        string

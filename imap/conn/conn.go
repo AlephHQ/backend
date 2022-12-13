@@ -1,8 +1,8 @@
 package conn
 
 import (
+	"aleph/backend/imap/response"
 	"crypto/tls"
-	"ncp/backend/imap/response"
 	"net"
 )
 

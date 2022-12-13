@@ -3,9 +3,9 @@ package main
 import (
 	"log"
 
-	"ncp/backend/api/server"
-	"ncp/backend/imap"
-	"ncp/backend/imap/client"
+	"aleph/backend/api/server"
+	"aleph/backend/imap"
+	"aleph/backend/imap/client"
 )
 
 func runIMAP() {

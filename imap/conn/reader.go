@@ -1,12 +1,12 @@
 package conn
 
 import (
+	"aleph/backend/imap"
+	"aleph/backend/imap/response"
 	"bufio"
 	"errors"
 	"io"
 	"log"
-	"ncp/backend/imap"
-	"ncp/backend/imap/response"
 	"strconv"
 )
 

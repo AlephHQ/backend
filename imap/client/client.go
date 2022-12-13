@@ -6,10 +6,10 @@ import (
 	"sync"
 	"time"
 
-	"ncp/backend/imap"
-	"ncp/backend/imap/command"
-	"ncp/backend/imap/conn"
-	"ncp/backend/imap/response"
+	"aleph/backend/imap"
+	"aleph/backend/imap/command"
+	"aleph/backend/imap/conn"
+	"aleph/backend/imap/response"
 )
 
 type Client struct {

@@ -81,10 +81,14 @@ func MessageToPost(msg *imap.Message) *Post {
 
 		post.MessageID = msg.Envelope.MessageID
 
-		if strings.HasPrefix(msg.Envelope.Subject, "=?") && strings.HasSuffix(msg.Envelope.Subject, "?=") {
+		if strings.Contains(msg.Envelope.Subject, "=?") && strings.Contains(msg.Envelope.Subject, "?=") {
+			// need to decode part of or the entire subject
+			startIndex := strings.Index(msg.Envelope.Subject, "=?")
+			endIndex := strings.Index(msg.Envelope.Subject, "?=") + 1
+			encoded := msg.Envelope.Subject[startIndex : endIndex+1]
 			dec := new(mime.WordDecoder)
-			subject, _ := dec.Decode(msg.Envelope.Subject)
-			post.Subject = subject
+			decoded, _ := dec.Decode(encoded)
+			post.Subject = strings.Replace(msg.Envelope.Subject, encoded, decoded, -1)
 		} else {
 			post.Subject = msg.Envelope.Subject
 		}

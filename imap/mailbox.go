@@ -6,10 +6,13 @@ type Mailbox struct {
 	Flags          map[Flag]bool `json:"flags"`
 	PermanentFlags map[Flag]bool `json:"permament_flags"`
 
+	// Total number of messages in mailbox
 	Exists uint64 `json:"exists"`
 
+	// Number of recent messages
 	Recent uint64 `json:"recent"`
 
+	// Sequence number of the first unseen message
 	Unseen uint64 `json:"unseen"`
 
 	UIDValidity uint64 `json:"uid_validity"`

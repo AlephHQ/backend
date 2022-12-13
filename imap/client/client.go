@@ -3,6 +3,7 @@ package client
 import (
 	"io"
 	"log"
+	"strconv"
 	"sync"
 	"time"
 
@@ -121,6 +122,23 @@ func (c *Client) handleUnsolicitedResp(resp *response.Response) {
 		if resp.Fields[2] == string(imap.SpecialCharacterOpenBracket) {
 			code := resp.Fields[3]
 			log.Printf("*** Unsolicited - %s\n", code)
+		}
+		return
+	}
+
+	if code, ok := resp.Fields[2].(string); ok {
+		switch imap.DataResponseCode(code) {
+		case imap.DataResponseCodeExists, imap.DataResponseCodeRecent:
+			num, _ := strconv.ParseUint(resp.Fields[1].(string), 10, 64)
+
+			switch imap.DataResponseCode(code) {
+			case imap.DataResponseCodeExists:
+				c.mbox.SetExists(num)
+			case imap.DataResponseCodeRecent:
+				c.mbox.SetRecent(num)
+			}
+
+			return
 		}
 	}
 }

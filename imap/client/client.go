@@ -190,8 +190,8 @@ func (c *Client) read() {
 }
 
 func (c *Client) idlecure() {
+	idleDurationAllowed := 1 * time.Minute
 	for {
-		idleDurationAllowed := 1 * time.Minute
 		time.Sleep(idleDurationAllowed)
 
 		if time.Since(c.lastActive) > idleDurationAllowed {

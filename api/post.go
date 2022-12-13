@@ -124,8 +124,8 @@ func MessageToPost(msg *imap.Message) *Post {
 				if p.Type == "text" && p.Subtype == "plain" {
 					// let's use this to set the post's Preview field
 					content := post.Body.Content
-					if len(content) > 1024 {
-						content = content[0:1024]
+					if len(content) > 512 {
+						content = content[0:512]
 					}
 
 					lines := strings.Split(content, "\r\n")

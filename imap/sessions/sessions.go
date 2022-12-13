@@ -7,9 +7,14 @@ import (
 	"sync"
 )
 
+type session struct {
+	c        *client.Client
+	messages []*imap.Message
+}
+
 type store struct {
-	clients map[string]*client.Client
-	mu      sync.RWMutex
+	sessions map[string]*session
+	mu       sync.Mutex
 }
 
 var defaultStore store
@@ -33,47 +38,52 @@ func Session(p *Params) (c *client.Client, err error) {
 		panic("username and password can't be empty")
 	}
 
-	if defaultStore.clients == nil {
-		defaultStore.clients = make(map[string]*client.Client)
+	defaultStore.mu.Lock()
+	defer defaultStore.mu.Unlock()
+
+	if defaultStore.sessions == nil {
+		defaultStore.sessions = make(map[string]*session)
 	}
 
-	defaultStore.mu.RLock()
-	c = defaultStore.clients[p.Username]
-	defaultStore.mu.RUnlock()
+	s := defaultStore.sessions[p.Username]
+	if s == nil {
+		s = &session{
+			c:        nil,
+			messages: make([]*imap.Message, 0),
+		}
+	}
 
-	// a valid is found
-	if c != nil && c.State() == imap.SelectedState {
+	if s.c != nil && s.c.State() == imap.SelectedState {
+		c = s.c
 		return
 	}
 
-	if c == nil {
-		c, err = client.DialWithTLS("tcp", "modsoussi.com:993")
+	if s.c == nil {
+		s.c, err = client.DialWithTLS("tcp", "modsoussi.com:993")
 		if err != nil {
 			return
 		}
 	}
 
-	if c.State() == imap.NotAuthenticatedState {
-		err = c.Login(p.Username+"@modsoussi.com", p.Password)
+	if s.c.State() == imap.NotAuthenticatedState {
+		err = s.c.Login(p.Username+"@modsoussi.com", p.Password)
 		if err != nil {
-			c.Logout()
-			c = nil
+			s.c.Logout()
+			s.c = nil
 			return
 		}
 	}
 
-	if c.State() == imap.AuthenticatedState {
-		err = c.Select("INBOX")
+	if s.c.State() == imap.AuthenticatedState {
+		err = s.c.Select("INBOX")
 		if err != nil {
-			c.Logout()
-			c = nil
+			s.c.Logout()
+			s.c = nil
 			return
 		}
 	}
 
-	defaultStore.mu.Lock()
-	defaultStore.clients[p.Username] = c
-	defaultStore.mu.Unlock()
-
+	defaultStore.sessions[p.Username] = s
+	c = s.c
 	return
 }

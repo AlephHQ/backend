@@ -60,15 +60,15 @@ const (
 type MessageAttribute string
 
 const (
-	MessageAttributeFlags        MessageAttribute = "FLAGS"
-	MessageAttributeInternalDate MessageAttribute = "INTERNALDATE"
-	MessageAttributeRFC822Size   MessageAttribute = "RFC822.SIZE"
-	MessageAttributeEnvelope     MessageAttribute = "ENVELOPE"
-	MessageAttributeBody         MessageAttribute = "BODY"
-	MessageAttributeBodyPeek     MessageAttribute = "BODY.PEEK"
-	MessageAttributeUID          MessageAttribute = "UID"
-	MessageAttributeRFC822       MessageAttribute = "RFC822"
-	MessageAttributePreview      MessageAttribute = "PREVIEW"
+	MessageAttributeFlags         MessageAttribute = "FLAGS"
+	MessageAttributeInternalDate  MessageAttribute = "INTERNALDATE"
+	MessageAttributeRFC822Size    MessageAttribute = "RFC822.SIZE"
+	MessageAttributeEnvelope      MessageAttribute = "ENVELOPE"
+	MessageAttributeBody          MessageAttribute = "BODY"
+	MessageAttributeUID           MessageAttribute = "UID"
+	MessageAttributeRFC822        MessageAttribute = "RFC822"
+	MessageAttributePreview       MessageAttribute = "PREVIEW"
+	MessageAttributeBodyStructure MessageAttribute = "BODYSTRUCTURE"
 )
 
 type CompoundMessageAttribute struct {

@@ -5,6 +5,7 @@ type Body struct {
 	Multipart        bool
 	MultipartSubtype string
 	Sections         map[string]string
+	Params           map[string]string
 	Full             string
 }
 

@@ -72,6 +72,12 @@ func getBodyPart(fields []interface{}) *imap.BodyStructure {
 		part.SetSize(fields[6].(uint64))
 	}
 
+	if len(fields) > 7 {
+		if fields[7] != nil {
+			part.SetSizeInLines(fields[7].(uint64))
+		}
+	}
+
 	if paramList, ok := fields[2].([]interface{}); ok {
 		for i := 0; i < len(paramList)-1; i += 2 {
 			part.AddKeyValParam(paramList[i].(string), paramList[i+1].(string))
@@ -183,7 +189,7 @@ func ParseMessage(resp *Response) (*imap.Message, error) {
 			}
 
 			message.SetEnvelope(envelope)
-		case imap.MessageAttributeBody, imap.MessageAttributeBodyPeek:
+		case imap.MessageAttributeBody, imap.MessageAttributeBodyStructure:
 			body := message.Body
 			if body == nil {
 				body = imap.NewBody()
@@ -200,7 +206,7 @@ func ParseMessage(resp *Response) (*imap.Message, error) {
 					body.AddPart(getBodyPart(firstPart)).SetMultipart(true)
 
 					for _, elem := range bodyFields[1:] {
-						if partFields, ok := elem.([]interface{}); ok {
+						if partFields, ok := elem.([]interface{}); ok && len(partFields) > 2 {
 							body.AddPart(getBodyPart(partFields))
 						}
 

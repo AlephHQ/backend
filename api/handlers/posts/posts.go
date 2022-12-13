@@ -82,10 +82,10 @@ func (Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					Name: imap.DataItemNameEnvelope,
 				},
 				{
-					Name: imap.DataItemNameBody,
+					Name: imap.DataItemNameBodyStructure,
 				},
 				{
-					Name:    imap.DataItemNameBody,
+					Name:    imap.DataItemNameBodyPeek,
 					Section: imap.BodySection("1"),
 					Partial: "0.1024",
 				},

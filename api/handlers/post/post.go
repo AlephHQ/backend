@@ -82,7 +82,7 @@ func (Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				},
 				[]*imap.DataItem{
 					{
-						Name: imap.DataItemNameBody,
+						Name: imap.DataItemNameBodyStructure,
 					},
 					{
 						Name:    imap.DataItemNameBody,

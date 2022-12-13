@@ -3,16 +3,17 @@ package imap
 type DataItemName string
 
 const (
-	DataItemNameBody         DataItemName = "BODY"
-	DataItemNameBodyPeek     DataItemName = "BODY.PEEK"
-	DataItemNameInternalDate DataItemName = "INTERNALDATE"
-	DataItemNameRFC822Size   DataItemName = "RFC822.SIZE"
-	DataItemNameEnvelope     DataItemName = "ENVELOPE"
-	DataItemNameRFC822Header DataItemName = "RFC822.HEADER"
-	DataItemNameUID          DataItemName = "UID"
-	DataItemNameFlags        DataItemName = "FLAGS"
-	DataItemNameRFC822       DataItemName = "RFC822"
-	DataItemNamePreview      DataItemName = "PREVIEW"
+	DataItemNameBody          DataItemName = "BODY"
+	DataItemNameBodyStructure DataItemName = "BODYSTRUCTURE"
+	DataItemNameBodyPeek      DataItemName = "BODY.PEEK"
+	DataItemNameInternalDate  DataItemName = "INTERNALDATE"
+	DataItemNameRFC822Size    DataItemName = "RFC822.SIZE"
+	DataItemNameEnvelope      DataItemName = "ENVELOPE"
+	DataItemNameRFC822Header  DataItemName = "RFC822.HEADER"
+	DataItemNameUID           DataItemName = "UID"
+	DataItemNameFlags         DataItemName = "FLAGS"
+	DataItemNameRFC822        DataItemName = "RFC822"
+	DataItemNamePreview       DataItemName = "PREVIEW"
 
 	DataItemPlusFlag  DataItemName = "+FLAGS"
 	DataItemMinusFlag DataItemName = "-FLAGS"

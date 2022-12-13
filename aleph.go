@@ -131,4 +131,6 @@ func main() {
 	if err := server.Serve(&server.ServeParams{Port: "7001"}); err != nil {
 		log.Panic(err)
 	}
+
+	log.Println("Testing vcs")
 }

@@ -8,11 +8,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"mime/quotedprintable"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -106,18 +103,6 @@ func (Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 
 			msg := messages[0]
-			content := msg.Body.Sections["1"]
-			switch imap.Encoding(msg.Body.Parts[0].Encoding) {
-			case imap.EncodingQuotePrintable:
-				b, err := io.ReadAll(quotedprintable.NewReader(strings.NewReader(content)))
-				if err != nil {
-					api.Error(w, err.Error(), http.StatusInternalServerError)
-					return
-				}
-
-				msg.Body.Sections["1"] = string(b)
-			}
-
 			b, _ := json.Marshal(api.MessageToPost(msg))
 			fmt.Fprintf(w, `{"status":"success", "post": %s}`, string(b))
 			return

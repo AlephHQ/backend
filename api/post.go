@@ -2,7 +2,9 @@ package api
 
 import (
 	"aleph/backend/imap"
+	"io"
 	"mime"
+	"mime/quotedprintable"
 	"strconv"
 	"strings"
 )
@@ -81,6 +83,7 @@ func MessageToPost(msg *imap.Message) *Post {
 
 		post.MessageID = msg.Envelope.MessageID
 
+		post.Subject = msg.Envelope.Subject
 		if strings.Contains(msg.Envelope.Subject, "=?") && strings.Contains(msg.Envelope.Subject, "?=") {
 			// need to decode part of or the entire subject
 			startIndex := strings.Index(msg.Envelope.Subject, "=?")
@@ -89,8 +92,6 @@ func MessageToPost(msg *imap.Message) *Post {
 			dec := new(mime.WordDecoder)
 			decoded, _ := dec.Decode(encoded)
 			post.Subject = strings.Replace(msg.Envelope.Subject, encoded, decoded, -1)
-		} else {
-			post.Subject = msg.Envelope.Subject
 		}
 	}
 
@@ -108,6 +109,34 @@ func MessageToPost(msg *imap.Message) *Post {
 					Size:     p.Size,
 					Params:   p.ParameterList,
 					Content:  msg.Body.Sections[section],
+				}
+
+				switch imap.Encoding(p.Encoding) {
+				case imap.EncodingQuotePrintable:
+					b, err := io.ReadAll(quotedprintable.NewReader(strings.NewReader(msg.Body.Sections[section])))
+					if err != nil {
+						panic(err)
+					}
+
+					post.Body.Content = string(b)
+				}
+
+				if p.Type == "text" && p.Subtype == "plain" {
+					// let's use this to set the post's Preview field
+					content := post.Body.Content
+					if len(content) > 1024 {
+						content = content[0:1024]
+					}
+
+					lines := strings.Split(content, "\r\n")
+					for _, line := range lines {
+						if strings.Contains(line, "http") {
+							continue
+						}
+
+						post.Preview = line
+						break
+					}
 				}
 			}
 		}

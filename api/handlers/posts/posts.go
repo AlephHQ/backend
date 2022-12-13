@@ -85,9 +85,9 @@ func (Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					Name: imap.DataItemNameBodyStructure,
 				},
 				{
-					Name:    imap.DataItemNameBodyPeek,
+					Name:    imap.DataItemNameBodyPeek, // BODY.PEEK doesn't set the \Seen flag
 					Section: imap.BodySection("1"),
-					Partial: "0.1024",
+					Partial: "0.1024", // for preview purposes
 				},
 				{
 					Name: imap.DataItemNameFlags,

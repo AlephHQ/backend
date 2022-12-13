@@ -145,11 +145,11 @@ func (mux *ServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.ServeHTTP(w, r)
 }
 
-type ServeParams struct {
+type Params struct {
 	Port string
 }
 
-func Serve(params *ServeParams) error {
+func Serve(params *Params) error {
 	mux := NewServeMux()
 	mux.Handle("/v1.0/auth", auth.NewHandler())
 	mux.Handle("/v1.0/inbox", middleware.Chain(inbox.NewHandler(), middleware.Auth()))

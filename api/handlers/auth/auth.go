@@ -51,7 +51,7 @@ func signup(email, password string) (*api.User, error) {
 		},
 		Password:         string(hash),
 		InternalPassword: utils.RandStr(12),
-		Username:         utils.RandStr(10),
+		Username:         utils.RandStrLower(10),
 		CreatedAt:        time.Now(),
 	}
 

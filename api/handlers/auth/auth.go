@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -20,12 +19,10 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-var errUserNotFound = errors.New("user not found")
-
 type Handler struct{}
 
 func NewHandler() *Handler {
-	return &Handler{}
+	return new(Handler)
 }
 
 func insertNewUserInternalCreds(u *api.User) error {

@@ -11,6 +11,7 @@ import (
 	"aleph/backend/api/handlers/inbox"
 	"aleph/backend/api/handlers/post"
 	"aleph/backend/api/handlers/posts"
+	"aleph/backend/api/handlers/session"
 	"aleph/backend/api/server/middleware"
 )
 
@@ -155,6 +156,7 @@ func Serve(params *Params) error {
 	mux.Handle("/v1.0/inbox", middleware.Chain(inbox.NewHandler(), middleware.Auth()))
 	mux.Handle("/v1.0/posts", middleware.Chain(posts.NewHandler(), middleware.Auth()))
 	mux.Handle("/v1.0/posts/:seqnum", middleware.Chain(post.NewHandler(), middleware.Auth()))
+	mux.Handle("/v1.0/auth/session", middleware.Chain(session.NewHandler(), middleware.Auth()))
 
 	if err := http.ListenAndServe(
 		":"+params.Port,

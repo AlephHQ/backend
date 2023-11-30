@@ -16,7 +16,7 @@ func runIMAP() {
 	defer c.Logout()
 
 	// err = c.Login("4Y4kKNqUH0ZUUw@modsoussi.com", "qEYDj0T4T1_SHhgN")
-	err = c.Login("mo@modsoussi.com", "alohomora")
+	err = c.Login("mo@modsoussi.com", "testpass")
 	if err != nil {
 		log.Panic(err)
 	}

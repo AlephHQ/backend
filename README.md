@@ -1,4 +1,4 @@
-An API backend that integrates a custom IMAP client in order to receive and organize newsletters.
+An API backend that integrates a custom IMAP client in order to receive, categorize, and organize newsletters.
 
 # Prerequisites
 

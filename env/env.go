@@ -8,7 +8,7 @@ var signingKeyDev = "jkjhasd.uyjflk-ajksh_jghasd86aisdhjkg-jksdjlh.gsd96"
 var domainDev = ""
 
 func Env() string {
-	if env := os.Getenv("MONGO_ENV"); env != "" {
+	if env := os.Getenv("ALEPH_ENV"); env != "" {
 		return env
 	}
 

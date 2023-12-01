@@ -13,9 +13,10 @@ In order to run this backend, you need to set up:
 Once you have all the prerequisites listed above, set the following environment variables:
 
 ```bash
+$ export ALEPH_ENV=your environment # default: development
 $ export DOMAIN=your-mail-server-domain
-$ export MONGO_UR=your-mongo-uri
-$ export MY_SQL_URI=your-my-sql-uri
+$ export MONGO_URI=your-mongo-uri
+$ export MYSQL_URI=your-my-sql-uri
 ```
 
 Now you can run backend as follows, from the project root directory:

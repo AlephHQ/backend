@@ -1,6 +1,7 @@
 package sessions
 
 import (
+	"aleph/backend/env"
 	"aleph/backend/imap"
 	"aleph/backend/imap/client"
 	"errors"
@@ -59,14 +60,14 @@ func Session(p *Params) (c *client.Client, err error) {
 	}
 
 	if s.c == nil {
-		s.c, err = client.DialWithTLS("tcp", "modsoussi.com:993")
+		s.c, err = client.DialWithTLS("tcp", env.Domain()+":993")
 		if err != nil {
 			return
 		}
 	}
 
 	if s.c.State() == imap.NotAuthenticatedState {
-		err = s.c.Login(p.Username+"@modsoussi.com", p.Password)
+		err = s.c.Login(p.Username+"@"+env.Domain(), p.Password)
 		if err != nil {
 			s.c.Logout()
 			s.c = nil

@@ -4,7 +4,7 @@ An API backend that integrates a custom IMAP client in order to receive, categor
 
 In order to run this backend, you need to set up:
 
-- a private mail server. You only need to be able to receive mail, which makes the process relatively simpler. I set one up using Postfix as the MTA and Dovecot as the MDA.
+- a private mail server. You only need to be able to receive mail, which makes the process relatively simpler. I set one up on EC2 using Postfix as the MTA and Dovecot as the MDA.
 - a MongoDB instance to hold API data.
 - a MySQL instance for Dovecot SASL.
 

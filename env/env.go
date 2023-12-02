@@ -2,12 +2,13 @@ package env
 
 import "os"
 
-var mongoURIDev = "[MONGO_URI]"
-var mySQLURIDev = "[SQL_URI]"
-var signingKeyDev = "[SIGNING_KEY]"
+var mongoURIDev = ""
+var mySQLURIDev = ""
+var signingKeyDev = "jkjhasd.uyjflk-ajksh_jghasd86aisdhjkg-jksdjlh.gsd96"
+var domainDev = ""
 
 func Env() string {
-	if env := os.Getenv("MONGO_ENV"); env != "" {
+	if env := os.Getenv("ALEPH_ENV"); env != "" {
 		return env
 	}
 
@@ -36,4 +37,12 @@ func SigningKey() []byte {
 	}
 
 	return []byte(signingKeyDev)
+}
+
+func Domain() string {
+	if dom := os.Getenv("DOMAIN"); dom != "" {
+		return dom
+	}
+
+	return domainDev
 }

@@ -4,19 +4,19 @@ import (
 	"log"
 
 	"aleph/backend/api/server"
+	"aleph/backend/env"
 	"aleph/backend/imap"
 	"aleph/backend/imap/client"
 )
 
 func runIMAP() {
-	c, err := client.DialWithTLS("tcp", "modsoussi.com:993")
+	c, err := client.DialWithTLS("tcp", env.Domain()+":993")
 	if err != nil {
 		log.Panic(err)
 	}
 	defer c.Logout()
 
-	// err = c.Login("4Y4kKNqUH0ZUUw@modsoussi.com", "qEYDj0T4T1_SHhgN")
-	err = c.Login("mo@modsoussi.com", "testpass")
+	err = c.Login("user@"+env.Domain(), "password")
 	if err != nil {
 		log.Panic(err)
 	}
